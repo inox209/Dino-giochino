@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gioco del Dino</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            overflow: hidden;
+        }
+        #gameContainer {
+            width: 800px; /* Larghezza fissa del contenitore */
+            height: 400px; /* Altezza fissa del contenitore */
+            position: relative;
+        }
+        canvas {
+            width: 100%; /* Occupa il 100% del contenitore */
+            height: 100%; /* Occupa il 100% del contenitore */
+            border: 1px solid #000;
+            background-color: #f7f7f7;
+        }
+        /* Stile per il pulsante di salto su mobile */
+        #jumpButton {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none; /* Nascondi di default */
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+    <!-- Pulsante di salto per dispositivi mobili -->
+    <button id="jumpButton">Salta</button>
+    <script src="game.js"></script>
+    <script>
+        // Mostra il pulsante di salto solo su dispositivi mobili
+        function checkIfMobile() {
+            if (/Mobi|Android/i.test(navigator.userAgent)) {
+                document.getElementById("jumpButton").style.display = "block"; // Mostra il pulsante su mobile
+                console.log("Dispositivo mobile rilevato"); // Debug
+            }
+        }
+
+        // Verifica se è un dispositivo mobile
+        checkIfMobile();
+    </script>
+</body>
+</html>
