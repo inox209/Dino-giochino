@@ -2,16 +2,64 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const jumpButton = document.getElementById("jumpButton");
 
+// Funzione per rilevare i dispositivi mobili
+function isMobileDevice() {
+    return window.innerWidth <= 768; // Considera mobile se la larghezza è <= 768px
+}
+
 // Funzione per ridimensionare il canvas
 function resizeCanvas() {
     const gameContainer = document.getElementById("gameContainer");
-    canvas.width = gameContainer.clientWidth;
-    canvas.height = gameContainer.clientHeight;
+
+    if (isMobileDevice()) {
+        // Ridimensionamento per dispositivi mobili
+        const pixelRatio = window.devicePixelRatio || 1;
+        canvas.width = window.innerWidth * pixelRatio;
+        canvas.height = window.innerHeight * pixelRatio;
+        canvas.style.width = window.innerWidth + "px";
+        canvas.style.height = window.innerHeight + "px";
+        ctx.scale(pixelRatio, pixelRatio);
+    } else {
+        // Mantieni le dimensioni originali per desktop
+        canvas.width = gameContainer.clientWidth;
+        canvas.height = gameContainer.clientHeight;
+    }
+
     console.log("Canvas ridimensionato:", canvas.width, canvas.height); // Debug
 }
 
 // Imposta le dimensioni iniziali del canvas
 resizeCanvas();
+
+// Funzione per calcolare il fattore di scala (solo per mobile)
+function getScaleFactor() {
+    const baseWidth = 800; // Larghezza di riferimento (ad esempio, la larghezza del canvas su desktop)
+    return canvas.width / baseWidth;
+}
+
+// Funzione per aggiornare gli elementi del gioco (solo per mobile)
+function updateGameElements() {
+    if (isMobileDevice()) {
+        const scaleFactor = getScaleFactor();
+
+        // Ridimensiona il dinosauro
+        dino.width = 100 * scaleFactor;
+        dino.height = 100 * scaleFactor;
+        dino.y = canvas.height - dino.height - 50;
+
+        // Ridimensiona gli ostacoli
+        palms.forEach((obstacle) => {
+            if (obstacle.type === "palm") {
+                obstacle.width = palmWidth * scaleFactor;
+                obstacle.height = palmHeight * scaleFactor;
+            } else if (obstacle.type === "umbrella") {
+                obstacle.width = umbrellaWidth * scaleFactor;
+                obstacle.height = umbrellaHeight * scaleFactor;
+            }
+            obstacle.y = canvas.height - (obstacle.type === "palm" ? palmHeight : umbrellaHeight) - 50;
+        });
+    }
+}
 
 // Caricamento immagini
 const dinoImg = new Image();
@@ -627,6 +675,7 @@ jumpButton.addEventListener("click", handleJump);
 // Ridimensionamento dinamico del canvas
 window.addEventListener("resize", () => {
     resizeCanvas();
+    updateGameElements();
 });
 
 // Funzione per caricare i buffer audio
