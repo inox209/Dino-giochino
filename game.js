@@ -19,6 +19,12 @@ function resizeCanvas() {
         canvas.style.width = window.innerWidth + "px";
         canvas.style.height = window.innerHeight + "px";
         ctx.scale(pixelRatio, pixelRatio);
+
+        // Posiziona il tasto "Salta" al centro dello schermo, poco sotto la schermata di gioco
+        jumpButton.style.position = "absolute";
+        jumpButton.style.left = "50%";
+        jumpButton.style.bottom = "20px";
+        jumpButton.style.transform = "translateX(-50%)";
     } else {
         // Mantieni le dimensioni originali per desktop
         canvas.width = gameContainer.clientWidth;
