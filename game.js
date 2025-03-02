@@ -10,8 +10,8 @@ function isMobileDevice() {
 // Funzione per ridimensionare il canvas (solo per dispositivi mobili)
 function resizeCanvas() {
     if (isMobileDevice()) {
-        const maxWidth = window.innerWidth * 0.8; // Ridotto a 80% della larghezza dello schermo
-        const maxHeight = window.innerHeight * 0.8; // Ridotto a 80% dell'altezza dello schermo
+        const maxWidth = window.innerWidth * 0.7; // Ridotto a 70% della larghezza dello schermo
+        const maxHeight = window.innerHeight * 0.7; // Ridotto a 70% dell'altezza dello schermo
 
         const aspectRatio = 800 / 400; // Proporzioni originali del canvas
         let canvasWidth = maxWidth;
@@ -75,7 +75,7 @@ function updateGameElements() {
         // Ridimensiona il dinosauro
         dino.width = 100 * scaleFactor;
         dino.height = 100 * scaleFactor;
-        dino.y = canvas.height - dino.height - 20; // Alzato di 20 pixel rispetto al fondo
+        dino.y = canvas.height - dino.height - 50; // Posizione Y corretta
 
         // Ridimensiona gli ostacoli
         palms.forEach((obstacle) => {
@@ -86,18 +86,18 @@ function updateGameElements() {
                 obstacle.width = umbrellaWidth * scaleFactor;
                 obstacle.height = umbrellaHeight * scaleFactor;
             }
-            obstacle.y = canvas.height - (obstacle.type === "palm" ? palmHeight : umbrellaHeight) - 20; // Alzato di 20 pixel rispetto al fondo
+            obstacle.y = canvas.height - (obstacle.type === "palm" ? palmHeight : umbrellaHeight) - 50; // Posizione Y corretta
         });
 
         // Ridimensiona il granchio
         granchio.width = 70 * scaleFactor;
         granchio.height = 70 * scaleFactor;
-        granchio.y = canvas.height - granchio.height - 20; // Alzato di 20 pixel rispetto al fondo
+        granchio.y = canvas.height - granchio.height - 50; // Posizione Y corretta
 
         // Ridimensiona il castello
         castello.width = 50 * scaleFactor;
         castello.height = 50 * scaleFactor;
-        castello.y = canvas.height - castello.height - 20; // Alzato di 20 pixel rispetto al fondo
+        castello.y = canvas.height - castello.height - 50; // Posizione Y corretta
     }
 }
 
@@ -659,13 +659,13 @@ function update(timestamp) {
     if (!gameEnded && timestamp - startTime > 5000) {
         if (isGranchioNext && !granchio.visible && !castello.visible && timestamp - lastGranchioTime > 6000) {
             granchio.x = canvas.width;
-            granchio.y = canvas.height - granchio.height - 20; // Posizione Y corretta
+            granchio.y = canvas.height - granchio.height - 50; // Posizione Y corretta
             granchio.visible = true;
             isGranchioNext = false;
             lastGranchioTime = timestamp;
         } else if (!isGranchioNext && !castello.visible && !granchio.visible && timestamp - lastCastelloTime > 6000) {
             castello.x = canvas.width;
-            castello.y = canvas.height - castello.height - 20; // Posizione Y corretta
+            castello.y = canvas.height - castello.height - 50; // Posizione Y corretta
             castello.visible = true;
             isGranchioNext = true;
             lastCastelloTime = timestamp;
