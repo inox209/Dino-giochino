@@ -2,40 +2,68 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const jumpButton = document.getElementById("jumpButton");
 
-// Funzione per rilevare i dispositivi mobili
+// Funzione per rilevare se il dispositivo è mobile
 function isMobileDevice() {
-    return window.innerWidth <= 768; // Considera mobile se la larghezza è <= 768px
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
 // Funzione per ridimensionare il canvas
 function resizeCanvas() {
     const gameContainer = document.getElementById("gameContainer");
 
+    // Dimensioni massime del canvas (90% dello schermo)
+    const maxWidth = window.innerWidth * 0.9;
+    const maxHeight = window.innerHeight * 0.9;
+
+    // Calcola le dimensioni del canvas mantenendo le proporzioni originali
+    const aspectRatio = 800 / 400; // Larghezza / altezza originale del canvas
+    let canvasWidth = maxWidth;
+    let canvasHeight = canvasWidth / aspectRatio;
+
+    // Se l'altezza calcolata supera l'altezza massima, riduci la larghezza
+    if (canvasHeight > maxHeight) {
+        canvasHeight = maxHeight;
+        canvasWidth = canvasHeight * aspectRatio;
+    }
+
+    // Imposta le dimensioni del canvas solo su dispositivi mobili
     if (isMobileDevice()) {
-        // Ridimensionamento per dispositivi mobili
-        const pixelRatio = window.devicePixelRatio || 1;
-        canvas.width = window.innerWidth * pixelRatio;
-        canvas.height = window.innerHeight * pixelRatio;
-        canvas.style.width = window.innerWidth + "px";
-        canvas.style.height = window.innerHeight + "px";
-        ctx.scale(pixelRatio, pixelRatio);
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+        canvas.style.width = `${canvasWidth}px`;
+        canvas.style.height = `${canvasHeight}px`;
+
+        // Centra il canvas nello schermo
+        canvas.style.position = "absolute";
+        canvas.style.left = "50%";
+        canvas.style.top = "50%";
+        canvas.style.transform = "translate(-50%, -50%)";
 
         // Posiziona il tasto "Salta" al centro dello schermo, poco sotto la schermata di gioco
         jumpButton.style.position = "absolute";
         jumpButton.style.left = "50%";
         jumpButton.style.bottom = "20px";
         jumpButton.style.transform = "translateX(-50%)";
+
+        console.log("Canvas ridimensionato:", canvas.width, canvas.height); // Debug
     } else {
-        // Mantieni le dimensioni originali per desktop
-        canvas.width = gameContainer.clientWidth;
-        canvas.height = gameContainer.clientHeight;
+        // Su desktop, mantieni le dimensioni originali del canvas
+        canvas.width = 800;
+        canvas.height = 400;
+        canvas.style.width = "800px";
+        canvas.style.height = "400px";
+        canvas.style.position = "static"; // Rimuovi il posizionamento assoluto
+        canvas.style.left = "auto";
+        canvas.style.top = "auto";
+        canvas.style.transform = "none";
+
+        // Riposiziona il tasto "Salta" in una posizione predefinita
+        jumpButton.style.position = "static";
+        jumpButton.style.left = "auto";
+        jumpButton.style.bottom = "auto";
+        jumpButton.style.transform = "none";
     }
-
-    console.log("Canvas ridimensionato:", canvas.width, canvas.height); // Debug
 }
-
-// Imposta le dimensioni iniziali del canvas
-resizeCanvas();
 
 // Funzione per calcolare il fattore di scala (solo per mobile)
 function getScaleFactor() {
@@ -66,6 +94,9 @@ function updateGameElements() {
         });
     }
 }
+
+// Imposta le dimensioni iniziali del canvas
+resizeCanvas();
 
 // Caricamento immagini
 const dinoImg = new Image();
@@ -680,8 +711,10 @@ jumpButton.addEventListener("click", handleJump);
 
 // Ridimensionamento dinamico del canvas
 window.addEventListener("resize", () => {
-    resizeCanvas();
-    updateGameElements();
+    if (isMobileDevice()) {
+        resizeCanvas();
+        updateGameElements();
+    }
 });
 
 // Funzione per caricare i buffer audio
