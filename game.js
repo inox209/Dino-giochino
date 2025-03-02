@@ -7,27 +7,23 @@ function isMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
-// Funzione per ridimensionare il canvas
+// Funzione per ridimensionare il canvas (solo per dispositivi mobili)
 function resizeCanvas() {
-    const gameContainer = document.getElementById("gameContainer");
-
-    // Dimensioni massime del canvas (90% dello schermo)
-    const maxWidth = window.innerWidth * 0.9;
-    const maxHeight = window.innerHeight * 0.9;
-
-    // Calcola le dimensioni del canvas mantenendo le proporzioni originali
-    const aspectRatio = 800 / 400; // Larghezza / altezza originale del canvas
-    let canvasWidth = maxWidth;
-    let canvasHeight = canvasWidth / aspectRatio;
-
-    // Se l'altezza calcolata supera l'altezza massima, riduci la larghezza
-    if (canvasHeight > maxHeight) {
-        canvasHeight = maxHeight;
-        canvasWidth = canvasHeight * aspectRatio;
-    }
-
-    // Imposta le dimensioni del canvas solo su dispositivi mobili
     if (isMobileDevice()) {
+        const maxWidth = window.innerWidth * 0.8; // Ridotto a 80% della larghezza dello schermo
+        const maxHeight = window.innerHeight * 0.8; // Ridotto a 80% dell'altezza dello schermo
+
+        const aspectRatio = 800 / 400; // Proporzioni originali del canvas
+        let canvasWidth = maxWidth;
+        let canvasHeight = canvasWidth / aspectRatio;
+
+        // Se l'altezza calcolata supera l'altezza massima, riduci la larghezza
+        if (canvasHeight > maxHeight) {
+            canvasHeight = maxHeight;
+            canvasWidth = canvasHeight * aspectRatio;
+        }
+
+        // Imposta le dimensioni del canvas
         canvas.width = canvasWidth;
         canvas.height = canvasHeight;
         canvas.style.width = `${canvasWidth}px`;
@@ -79,7 +75,7 @@ function updateGameElements() {
         // Ridimensiona il dinosauro
         dino.width = 100 * scaleFactor;
         dino.height = 100 * scaleFactor;
-        dino.y = canvas.height - dino.height - 50;
+        dino.y = canvas.height - dino.height - 20; // Alzato di 20 pixel rispetto al fondo
 
         // Ridimensiona gli ostacoli
         palms.forEach((obstacle) => {
@@ -90,8 +86,18 @@ function updateGameElements() {
                 obstacle.width = umbrellaWidth * scaleFactor;
                 obstacle.height = umbrellaHeight * scaleFactor;
             }
-            obstacle.y = canvas.height - (obstacle.type === "palm" ? palmHeight : umbrellaHeight) - 50;
+            obstacle.y = canvas.height - (obstacle.type === "palm" ? palmHeight : umbrellaHeight) - 20; // Alzato di 20 pixel rispetto al fondo
         });
+
+        // Ridimensiona il granchio
+        granchio.width = 70 * scaleFactor;
+        granchio.height = 70 * scaleFactor;
+        granchio.y = canvas.height - granchio.height - 20; // Alzato di 20 pixel rispetto al fondo
+
+        // Ridimensiona il castello
+        castello.width = 50 * scaleFactor;
+        castello.height = 50 * scaleFactor;
+        castello.y = canvas.height - castello.height - 20; // Alzato di 20 pixel rispetto al fondo
     }
 }
 
@@ -619,6 +625,7 @@ function update(timestamp) {
 
     // Movimento del granchio e del castello
     if (granchio.visible) {
+        console.log("Granchio visibile:", granchio.x, granchio.y); // Debug
         granchio.x -= scrollSpeed;
         if (granchio.x + granchio.width < 0) {
             granchio.visible = false;
@@ -652,12 +659,16 @@ function update(timestamp) {
     if (!gameEnded && timestamp - startTime > 5000) {
         if (isGranchioNext && !granchio.visible && !castello.visible && timestamp - lastGranchioTime > 6000) {
             granchio.x = canvas.width;
+            granchio.y = canvas.height - granchio.height - 20; // Posizione Y corretta
             granchio.visible = true;
             isGranchioNext = false;
+            lastGranchioTime = timestamp;
         } else if (!isGranchioNext && !castello.visible && !granchio.visible && timestamp - lastCastelloTime > 6000) {
             castello.x = canvas.width;
+            castello.y = canvas.height - castello.height - 20; // Posizione Y corretta
             castello.visible = true;
             isGranchioNext = true;
+            lastCastelloTime = timestamp;
         }
     }
 
