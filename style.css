@@ -1,0 +1,55 @@
+body {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    background-color: #f0f0f0;
+    overflow: hidden;
+}
+
+#gameHeader {
+    text-align: center;
+    margin-top: 5px; /* Riduci il margine superiore per avvicinare il titolo al bordo */
+    margin-bottom: 5px; /* Riduci il margine inferiore per avvicinare il sottotitolo al canvas */
+}
+
+#gameTitle {
+    font-size: 48px;
+    font-weight: bold;
+    color: #333;
+}
+
+#gameSubtitle {
+    font-size: 24px;
+    color: #666;
+}
+
+#gameContainer {
+    width: 800px; /* Larghezza fissa del contenitore */
+    height: 400px; /* Altezza fissa del contenitore */
+    position: relative;
+    margin-top: 5px; /* Aggiungi un piccolo margine sopra il canvas */
+}
+
+canvas {
+    width: 100%; /* Occupa il 100% del contenitore */
+    height: 100%; /* Occupa il 100% del contenitore */
+    border: 1px solid #000;
+    background-color: #f7f7f7;
+}
+
+/* Stile per il pulsante di salto su mobile */
+#jumpButton {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    font-size: 18px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    display: none; /* Nascondi di default */
+}
