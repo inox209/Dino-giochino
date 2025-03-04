@@ -45,13 +45,23 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
     document.body.appendChild(instructionsDiv);
 
+    // Dimensioni di riferimento (800x400)
+    const referenceWidth = 800;
+    const referenceHeight = 400;
+
+    // Funzione per scalare le dimensioni in base al canvas
+    function scaleValue(value, isWidth = true) {
+        const scaleFactor = isWidth ? canvas.width / referenceWidth : canvas.height / referenceHeight;
+        return value * scaleFactor;
+    }
+
     // Variabili di gioco
-    let dino = { 
-        x: 100, 
-        y: 250, 
-        width: 100, 
-        height: 100, 
-        isJumping: false, 
+    let dino = {
+        x: scaleValue(100), // Posizione X scalata
+        y: scaleValue(250, false), // Posizione Y scalata
+        width: scaleValue(100), // Larghezza scalata
+        height: scaleValue(100, false), // Altezza scalata
+        isJumping: false,
         jumpSpeed: -15, // Salto più lento
         gravity: 0.5 // Gravità ridotta
     };
@@ -93,71 +103,44 @@ document.addEventListener("DOMContentLoaded", () => {
         coverVideo.style.left = `${videoLeft}px`;
     }
 
-    // Funzione per rilevare se il dispositivo è mobile
-    function isMobileDevice() {
-        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    }
-
     // Funzione per ridimensionare il canvas in base al dispositivo
     function resizeCanvas() {
-        if (isMobileDevice()) {
-            // Modalità mobile
-            const maxWidth = window.innerWidth * 0.9; // 90% della larghezza dello schermo
-            const maxHeight = window.innerHeight * 0.9; // 90% dell'altezza dello schermo
+        const maxWidth = window.innerWidth * 0.9; // 90% della larghezza dello schermo
+        const maxHeight = window.innerHeight * 0.9; // 90% dell'altezza dello schermo
 
-            // Proporzioni originali del canvas (800x400)
-            const aspectRatio = 800 / 400;
+        // Proporzioni originali del canvas (800x400)
+        const aspectRatio = referenceWidth / referenceHeight;
 
-            // Calcola le dimensioni del canvas mantenendo le proporzioni
-            let canvasWidth = maxWidth;
-            let canvasHeight = canvasWidth / aspectRatio;
+        // Calcola le dimensioni del canvas mantenendo le proporzioni
+        let canvasWidth = maxWidth;
+        let canvasHeight = canvasWidth / aspectRatio;
 
-            // Se l'altezza calcolata supera l'altezza massima, riduci la larghezza
-            if (canvasHeight > maxHeight) {
-                canvasHeight = maxHeight;
-                canvasWidth = canvasHeight * aspectRatio;
-            }
-
-            // Imposta le dimensioni del canvas
-            canvas.width = canvasWidth;
-            canvas.height = canvasHeight;
-            canvas.style.width = `${canvasWidth}px`;
-            canvas.style.height = `${canvasHeight}px`;
-
-            // Centra il canvas nello schermo
-            canvas.style.position = "absolute";
-            canvas.style.left = "50%";
-            canvas.style.top = "50%";
-            canvas.style.transform = "translate(-50%, -50%)";
-
-            // Posiziona il tasto "Salta" al centro dello schermo, poco sotto la schermata di gioco
-            jumpButton.style.position = "absolute";
-            jumpButton.style.left = "50%";
-            jumpButton.style.bottom = "10px"; // Riduci la distanza dal basso
-            jumpButton.style.transform = "translateX(-50%)";
-
-            // Adeguare la posizione del dinosauro
-            dino.y = canvas.height * 0.6; // Posizione Y del dinosauro (60% dell'altezza del canvas)
-        } else {
-            // Modalità desktop
-            canvas.width = 800;
-            canvas.height = 400;
-            canvas.style.width = "800px";
-            canvas.style.height = "400px";
-            canvas.style.position = "static";
-            canvas.style.left = "auto";
-            canvas.style.top = "auto";
-            canvas.style.transform = "none";
-
-            // Riposiziona il tasto "Salta" in una posizione predefinita
-            jumpButton.style.position = "static";
-            jumpButton.style.left = "auto";
-            jumpButton.style.bottom = "auto";
-            jumpButton.style.transform = "none";
-
-            // Ripristina la posizione del dinosauro per desktop
-            dino.y = 250;
+        // Se l'altezza calcolata supera l'altezza massima, riduci la larghezza
+        if (canvasHeight > maxHeight) {
+            canvasHeight = maxHeight;
+            canvasWidth = canvasHeight * aspectRatio;
         }
+
+        // Imposta le dimensioni del canvas
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+        canvas.style.width = `${canvasWidth}px`;
+        canvas.style.height = `${canvasHeight}px`;
+
+        // Centra il canvas nello schermo
+        canvas.style.position = "absolute";
+        canvas.style.left = "50%";
+        canvas.style.top = "50%";
+        canvas.style.transform = "translate(-50%, -50%)";
+
+        // Posiziona il tasto "Salta" al centro dello schermo, poco sotto la schermata di gioco
+        jumpButton.style.position = "absolute";
+        jumpButton.style.left = "50%";
+        jumpButton.style.bottom = "10px"; // Riduci la distanza dal basso
+        jumpButton.style.transform = "translateX(-50%)";
+
+        // Adeguare la posizione del dinosauro
+        dino.y = canvas.height * 0.6; // Posizione Y del dinosauro (60% dell'altezza del canvas)
 
         // Ridimensiona e posiziona il video "cover"
         resizeCoverVideo();
@@ -240,25 +223,25 @@ document.addEventListener("DOMContentLoaded", () => {
     // Variabili di gioco
     let dina = {
         x: canvas.width, // Inizia fuori dallo schermo a destra
-        y: 250, // Stessa altezza di dino
-        width: 108, // Ingrandita del 10%
-        height: 108, // Ingrandita del 10%
+        y: scaleValue(250, false), // Stessa altezza di dino
+        width: scaleValue(108), // Ingrandita del 10%
+        height: scaleValue(108, false), // Ingrandita del 10%
         visible: false, // Inizialmente invisibile
-        targetX: canvas.width - 150, // Posizione finale a destra
+        targetX: canvas.width - scaleValue(150), // Posizione finale a destra
         isMoving: false // Controlla se Dina si sta muovendo
     };
     let gtr3 = {
-        x: canvas.width + 200, // Inizia fuori dallo schermo a destra, più lontano di Dina
-        y: 230, // Alzata di 20 pixel rispetto a Dina
-        width: 150, // Larghezza aumentata ulteriormente
-        height: 150, // Altezza aumentata ulteriormente
+        x: canvas.width + scaleValue(200), // Inizia fuori dallo schermo a destra, più lontano di Dina
+        y: scaleValue(230, false), // Alzata di 20 pixel rispetto a Dina
+        width: scaleValue(150), // Larghezza aumentata ulteriormente
+        height: scaleValue(150, false), // Altezza aumentata ulteriormente
         visible: false, // Inizialmente invisibile
-        targetX: canvas.width - 300, // Posizione finale a destra, più a sinistra di Dina
+        targetX: canvas.width - scaleValue(300), // Posizione finale a destra, più a sinistra di Dina
         isMoving: false // Controlla se gtr3 si sta muovendo
     };
     let palms = [];
-    let granchio = { x: canvas.width, y: 250, width: 70, height: 70, visible: false }; // Granchio inizialmente invisibile
-    let castello = { x: canvas.width, y: canvas.height - 80, width: 50, height: 50, visible: false }; // Castello più in basso
+    let granchio = { x: canvas.width, y: scaleValue(250, false), width: scaleValue(70), height: scaleValue(70, false), visible: false }; // Granchio inizialmente invisibile
+    let castello = { x: canvas.width, y: canvas.height - scaleValue(80, false), width: scaleValue(50), height: scaleValue(50, false), visible: false }; // Castello più in basso
     let scrollSpeed = 5; // Velocità iniziale ridotta
     let score = 0;
     let lastObstacleTime = 0;
@@ -280,10 +263,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const palmYOffset = 10; // Abbassa le palme (valore positivo per spostarle verso il basso)
 
     // Dimensioni delle immagini modificate
-    const palmWidth = 144 * 1.2 * 0.9; // Aumenta del 20% e poi rimpicciolisce del 10%
-    const palmHeight = 144 * 1.2 * 0.9; // Aumenta del 20% e poi rimpicciolisce del 10%
-    const umbrellaWidth = 144 * 0.8; // Riduci del 20%
-    const umbrellaHeight = 144 * 0.8; // Riduci del 20%
+    const palmWidth = scaleValue(144 * 1.2 * 0.9); // Aumenta del 20% e poi rimpicciolisce del 10%
+    const palmHeight = scaleValue(144 * 1.2 * 0.9, false); // Aumenta del 20% e poi rimpicciolisce del 10%
+    const umbrellaWidth = scaleValue(144 * 0.8); // Riduci del 20%
+    const umbrellaHeight = scaleValue(144 * 0.8, false); // Riduci del 20%
 
     // Altezza ridotta per la sagoma della palma
     const palmCollisionHeight = palmHeight * 0.7; // Riduci l'altezza della sagoma del 30%
@@ -293,7 +276,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const maxPairProbability = 0.5; // Massima probabilità (50%)
 
     // Distanza orizzontale tra gli ostacoli in una coppia
-    const obstacleSpacing = 100; // Distanza di 100 pixel tra i due ostacoli
+    const obstacleSpacing = scaleValue(100); // Distanza di 100 pixel tra i due ostacoli
 
     // Intervallo di generazione degli ostacoli
     const initialObstacleInterval = 2000; // 2 secondi all'inizio
@@ -312,8 +295,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
         const x = canvas.width;
         const y = type === "umbrella" 
-            ? canvas.height - umbrellaHeight - 50 + umbrellaYOffset + 20 // Abbassa ombrelloni di 20 pixel
-            : canvas.height - palmHeight - 50 + palmYOffset; // Ripristina palme alla posizione originale
+            ? canvas.height - umbrellaHeight - scaleValue(50, false) + umbrellaYOffset + 20 // Abbassa ombrelloni di 20 pixel
+            : canvas.height - palmHeight - scaleValue(50, false) + palmYOffset; // Ripristina palme alla posizione originale
         return { type, x, y, passed: false, hit: false };
     }
 
@@ -326,12 +309,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const x2 = x1 + obstacleSpacing; // Distanza orizzontale tra i due ostacoli
 
         const y1 = type1 === "umbrella" 
-            ? canvas.height - umbrellaHeight - 50 + umbrellaYOffset + 20 // Abbassa ombrelloni di 20 pixel
-            : canvas.height - palmHeight - 50 + palmYOffset; // Ripristina palme alla posizione originale
+            ? canvas.height - umbrellaHeight - scaleValue(50, false) + umbrellaYOffset + 20 // Abbassa ombrelloni di 20 pixel
+            : canvas.height - palmHeight - scaleValue(50, false) + palmYOffset; // Ripristina palme alla posizione originale
 
         const y2 = type2 === "umbrella" 
-            ? canvas.height - umbrellaHeight - 50 + umbrellaYOffset + 20 // Abbassa ombrelloni di 20 pixel
-            : canvas.height - palmHeight - 50 + palmYOffset; // Ripristina palme alla posizione originale
+            ? canvas.height - umbrellaHeight - scaleValue(50, false) + umbrellaYOffset + 20 // Abbassa ombrelloni di 20 pixel
+            : canvas.height - palmHeight - scaleValue(50, false) + palmYOffset; // Ripristina palme alla posizione originale
 
         return [
             { type: type1, x: x1, y: y1, passed: false, hit: false },
@@ -346,7 +329,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Funzione per disegnare la maschera a forma di cuore
     function drawHeartMask(ctx, progress) {
         const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2 + 100; // Abbassa il cuore di 100 pixel rispetto al centro
+        const centerY = canvas.height / 2 + scaleValue(100, false); // Abbassa il cuore di 100 pixel rispetto al centro
         const maxRadius = Math.max(canvas.width, canvas.height) * 0.8; // Raggio massimo del cuore
         const radius = maxRadius * (1 - progress); // Raggio in base al progresso
 
@@ -414,24 +397,24 @@ document.addEventListener("DOMContentLoaded", () => {
             drawImage(ctx, dinaImg, dina.x, dina.y, dina.width, dina.height);
 
             // Disegna la chitarra gtr1 sopra Dina
-            const gtr1X = dina.x + 10; // Spostata leggermente a sinistra
-            const gtr1Y = dina.y + 10; // Spostata leggermente verso il basso
-            const gtr1Width = 80; // Larghezza della chitarra
-            const gtr1Height = 80; // Altezza della chitarra
+            const gtr1X = dina.x + scaleValue(10); // Spostata leggermente a sinistra
+            const gtr1Y = dina.y + scaleValue(10, false); // Spostata leggermente verso il basso
+            const gtr1Width = scaleValue(80); // Larghezza della chitarra
+            const gtr1Height = scaleValue(80, false); // Altezza della chitarra
             drawImage(ctx, gtr1Img, gtr1X, gtr1Y, gtr1Width, gtr1Height);
 
             // Disegna la chitarra gtr3 a sinistra di Dina
-            const gtr3X = dina.x - 150; // Posizionata a sinistra di Dina (con spazio aggiuntivo)
-            const gtr3Y = dina.y - 20; // Alzata di 20 pixel rispetto a Dina
-            const gtr3Width = 150; // Larghezza aumentata ulteriormente
-            const gtr3Height = 150; // Altezza aumentata ulteriormente
+            const gtr3X = dina.x - scaleValue(150); // Posizionata a sinistra di Dina (con spazio aggiuntivo)
+            const gtr3Y = dina.y - scaleValue(20, false); // Alzata di 20 pixel rispetto a Dina
+            const gtr3Width = scaleValue(150); // Larghezza aumentata ulteriormente
+            const gtr3Height = scaleValue(150, false); // Altezza aumentata ulteriormente
             drawImage(ctx, gtr3Img, gtr3X, gtr3Y, gtr3Width, gtr3Height);
         }
 
         // 7. Disegna il punteggio
         ctx.fillStyle = "black";
-        ctx.font = "24px Arial";
-        ctx.fillText(`Punteggio: ${score}`, 20, 30);
+        ctx.font = `${scaleValue(24)}px Arial`; // Scala il font
+        ctx.fillText(`Punteggio: ${score}`, scaleValue(20), scaleValue(30, false));
     }
 
     // AudioContext per sincronizzare gli audio
@@ -572,9 +555,9 @@ document.addEventListener("DOMContentLoaded", () => {
         // Muovi i dinosauri verso il centro
         if (dinoMoveTime && timestamp - dinoMoveTime > 2000) { // Aspetta 2 secondi prima di muoversi
             const centerX = canvas.width / 2;
-            const dinoTargetX = centerX - 150; // Dino si ferma leggermente a sinistra del centro
-            const dinaTargetX = centerX + 50; // Dina si ferma leggermente a destra del centro
-            const gtr3TargetX = centerX - 250; // gtr3 si ferma più a sinistra di Dino
+            const dinoTargetX = centerX - scaleValue(150); // Dino si ferma leggermente a sinistra del centro
+            const dinaTargetX = centerX + scaleValue(50); // Dina si ferma leggermente a destra del centro
+            const gtr3TargetX = centerX - scaleValue(250); // gtr3 si ferma più a sinistra di Dino
 
             // Muovi Dino verso il centro
             if (dino.x < dinoTargetX) {
@@ -637,8 +620,8 @@ document.addEventListener("DOMContentLoaded", () => {
             dino.y += dino.jumpSpeed;
             dino.jumpSpeed += dino.gravity;
 
-            if (dino.y >= 250) {
-                dino.y = 250;
+            if (dino.y >= scaleValue(250, false)) {
+                dino.y = scaleValue(250, false);
                 dino.isJumping = false;
             }
         }
@@ -708,13 +691,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!gameEnded && timestamp - startTime > 5000) {
             if (isGranchioNext && !granchio.visible && !castello.visible && timestamp - lastGranchioTime > 6000) {
                 granchio.x = canvas.width;
-                granchio.y = canvas.height - granchio.height - 50; // Posizione Y corretta
+                granchio.y = canvas.height - granchio.height - scaleValue(50, false); // Posizione Y corretta
                 granchio.visible = true;
                 isGranchioNext = false;
                 lastGranchioTime = timestamp;
             } else if (!isGranchioNext && !castello.visible && !granchio.visible && timestamp - lastCastelloTime > 6000) {
                 castello.x = canvas.width;
-                castello.y = canvas.height - castello.height - 50; // Posizione Y corretta
+                castello.y = canvas.height - castello.height - scaleValue(50, false); // Posizione Y corretta
                 castello.visible = true;
                 isGranchioNext = true;
                 lastCastelloTime = timestamp;
@@ -799,10 +782,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Ridimensionamento dinamico del canvas
     window.addEventListener("resize", () => {
-        if (isMobileDevice()) {
-            resizeCanvas();
-            updateGameElements();
-        }
+        resizeCanvas();
     });
 
     // Funzione per caricare i buffer audio
