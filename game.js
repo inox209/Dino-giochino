@@ -34,13 +34,13 @@ instructionsDiv.style.fontFamily = "Arial, sans-serif";
 instructionsDiv.style.zIndex = "1000";
 instructionsDiv.style.width = "400px"; // Larghezza della finestra
 instructionsDiv.style.boxShadow = "0 4px 10px rgba(0, 0, 0, 0.2)"; // Ombra per un effetto 3D
-instructionsDiv.style.border = "2px solid #ff6f61"; // Bordo colorato
+instructionsDiv.style.border = "2px solidrgb(97, 189, 255)"; // Bordo colorato
 instructionsDiv.innerHTML = `
-    <h1 style="font-size: 24px; color: #ff6f61; margin-bottom: 20px;">FortunaDino!</h1>
+    <h1 style="font-size: 24px; color:rgb(97, 194, 255); margin-bottom: 20px;">FortunaDino!</h1>
     <p style="font-size: 16px; line-height: 1.6;">Sono sicuro che da qualche parte troverà la sua Dina...</p>
     <p style="font-size: 16px; line-height: 1.6;">...ma solo tu puoi aiutarlo!</p>
     <p style="font-size: 16px; line-height: 1.6;">In questa ricerca, Dino dovrà saltare alcuni ostacoli che si presenteranno man mano sul suo cammino e, se riuscirai a saltarli tutti, potrete finalmente godervi un po' di dolce compagnia.</p>
-    <p style="font-size: 18px; font-weight: bold; color: #ff6f61; margin-top: 20px;">Salta per continuare</p>
+    <p style="font-size: 18px; font-weight: bold; color:rgb(97, 194, 255); margin-top: 20px;">Salta per continuare</p>
 `;
 document.body.appendChild(instructionsDiv);
 
@@ -86,13 +86,17 @@ function isMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
-// Funzione per ridimensionare il canvas (solo per dispositivi mobili)
+// Funzione per ridimensionare il canvas in base al dispositivo
 function resizeCanvas() {
     if (isMobileDevice()) {
-        const maxWidth = window.innerWidth * 0.7; // Ridotto a 70% della larghezza dello schermo
-        const maxHeight = window.innerHeight * 0.7; // Ridotto a 70% dell'altezza dello schermo
+        // Modalità mobile
+        const maxWidth = window.innerWidth * 0.9; // Larghezza massima (90% dello schermo)
+        const maxHeight = window.innerHeight * 0.9; // Altezza massima (90% dello schermo)
 
-        const aspectRatio = 800 / 400; // Proporzioni originali del canvas
+        // Proporzioni originali del canvas (800x400)
+        const aspectRatio = 800 / 400;
+
+        // Calcola le dimensioni del canvas mantenendo le proporzioni
         let canvasWidth = maxWidth;
         let canvasHeight = canvasWidth / aspectRatio;
 
@@ -119,15 +123,13 @@ function resizeCanvas() {
         jumpButton.style.left = "50%";
         jumpButton.style.bottom = "20px";
         jumpButton.style.transform = "translateX(-50%)";
-
-        console.log("Canvas ridimensionato:", canvas.width, canvas.height); // Debug
     } else {
-        // Su desktop, mantieni le dimensioni originali del canvas
+        // Modalità desktop
         canvas.width = 800;
         canvas.height = 400;
         canvas.style.width = "800px";
         canvas.style.height = "400px";
-        canvas.style.position = "static"; // Rimuovi il posizionamento assoluto
+        canvas.style.position = "static";
         canvas.style.left = "auto";
         canvas.style.top = "auto";
         canvas.style.transform = "none";
@@ -139,9 +141,34 @@ function resizeCanvas() {
         jumpButton.style.transform = "none";
     }
 
-    // Ridimensiona e posiziona il video
+    // Ridimensiona e posiziona il video "cover"
     resizeCoverVideo();
 }
+
+// Funzione per ridimensionare e posizionare il video "cover"
+function resizeCoverVideo() {
+    const videoWidth = canvas.width * 0.8; // 80% della larghezza del canvas
+    const videoHeight = canvas.height * 0.8; // 80% dell'altezza del canvas
+
+    // Calcola le coordinate rispetto al canvas
+    const canvasRect = canvas.getBoundingClientRect();
+    const videoTop = canvasRect.top + (canvas.height - videoHeight) / 2;
+    const videoLeft = canvasRect.left + (canvas.width - videoWidth) / 2;
+
+    // Imposta le dimensioni e la posizione del video
+    coverVideo.style.width = `${videoWidth}px`;
+    coverVideo.style.height = `${videoHeight}px`;
+    coverVideo.style.top = `${videoTop}px`;
+    coverVideo.style.left = `${videoLeft}px`;
+}
+
+// Ridimensiona il canvas all'avvio
+resizeCanvas();
+
+// Ridimensiona il canvas quando la finestra viene ridimensionata (utile per il cambio orientamento su mobile)
+window.addEventListener("resize", () => {
+    resizeCanvas();
+});
 
 // Imposta le dimensioni iniziali del canvas
 resizeCanvas();
