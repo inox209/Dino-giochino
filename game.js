@@ -2,6 +2,85 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const jumpButton = document.getElementById("jumpButton");
 
+// Elemento video per la copertina
+const coverVideo = document.createElement("video");
+coverVideo.src = "assets/cover.mp4";
+coverVideo.loop = false; // Disabilita il loop
+coverVideo.muted = true;
+coverVideo.style.position = "absolute";
+coverVideo.style.display = "none"; // Inizialmente nascosto
+coverVideo.style.opacity = "0"; // Inizia con opacità 0
+coverVideo.style.transition = "opacity 2s"; // Transizione di 2 secondi per il fade
+document.body.appendChild(coverVideo);
+
+// Variabile per controllare se il video "cover" è stato riprodotto
+let coverVideoPlayed = false;
+
+// Variabile per controllare se il gioco è in pausa (finestra di istruzioni aperta)
+let gamePaused = true;
+
+// Finestra di istruzioni
+const instructionsDiv = document.createElement("div");
+instructionsDiv.style.position = "absolute";
+instructionsDiv.style.top = "50%";
+instructionsDiv.style.left = "50%";
+instructionsDiv.style.transform = "translate(-50%, -50%)";
+instructionsDiv.style.backgroundColor = "rgba(255, 255, 255, 0.9)"; // Sfondo bianco semi-trasparente
+instructionsDiv.style.color = "#333"; // Colore del testo scuro
+instructionsDiv.style.padding = "30px";
+instructionsDiv.style.borderRadius = "15px";
+instructionsDiv.style.textAlign = "center";
+instructionsDiv.style.fontFamily = "Arial, sans-serif";
+instructionsDiv.style.zIndex = "1000";
+instructionsDiv.style.width = "400px"; // Larghezza della finestra
+instructionsDiv.style.boxShadow = "0 4px 10px rgba(0, 0, 0, 0.2)"; // Ombra per un effetto 3D
+instructionsDiv.style.border = "2px solid #ff6f61"; // Bordo colorato
+instructionsDiv.innerHTML = `
+    <h1 style="font-size: 24px; color: #ff6f61; margin-bottom: 20px;">FortunaDino!</h1>
+    <p style="font-size: 16px; line-height: 1.6;">Sono sicuro che da qualche parte troverà la sua Dina...</p>
+    <p style="font-size: 16px; line-height: 1.6;">...ma solo tu puoi aiutarlo!</p>
+    <p style="font-size: 16px; line-height: 1.6;">In questa ricerca, Dino dovrà saltare alcuni ostacoli che si presenteranno man mano sul suo cammino e, se riuscirai a saltarli tutti, potrete finalmente godervi un po' di dolce compagnia.</p>
+    <p style="font-size: 18px; font-weight: bold; color: #ff6f61; margin-top: 20px;">Salta per continuare</p>
+`;
+document.body.appendChild(instructionsDiv);
+
+// Funzione per chiudere la finestra di istruzioni e avviare il gioco
+function startGame() {
+    gamePaused = false;
+    instructionsDiv.style.display = "none"; // Nascondi la finestra di istruzioni
+    requestAnimationFrame(gameLoop); // Avvia il loop del gioco
+}
+
+// Gestione degli eventi per chiudere la finestra di istruzioni
+document.addEventListener("keydown", (event) => {
+    if (gamePaused && event.code === "Space") {
+        startGame();
+    }
+});
+
+jumpButton.addEventListener("click", () => {
+    if (gamePaused) {
+        startGame();
+    }
+});
+
+// Funzione per ridimensionare e posizionare il video
+function resizeCoverVideo() {
+    const videoWidth = canvas.width * 0.8; // 80% della larghezza del canvas
+    const videoHeight = canvas.height * 0.8; // 80% dell'altezza del canvas
+
+    // Calcola le coordinate rispetto al canvas
+    const canvasRect = canvas.getBoundingClientRect(); // Ottieni la posizione del canvas nella pagina
+    const videoTop = canvasRect.top + (canvas.height - videoHeight) / 2; // Centra verticalmente rispetto al canvas
+    const videoLeft = canvasRect.left + (canvas.width - videoWidth) / 2; // Centra orizzontalmente rispetto al canvas
+
+    // Imposta le dimensioni e la posizione del video
+    coverVideo.style.width = `${videoWidth}px`;
+    coverVideo.style.height = `${videoHeight}px`;
+    coverVideo.style.top = `${videoTop}px`;
+    coverVideo.style.left = `${videoLeft}px`;
+}
+
 // Funzione per rilevare se il dispositivo è mobile
 function isMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -59,46 +138,9 @@ function resizeCanvas() {
         jumpButton.style.bottom = "auto";
         jumpButton.style.transform = "none";
     }
-}
 
-// Funzione per calcolare il fattore di scala (solo per mobile)
-function getScaleFactor() {
-    const baseWidth = 800; // Larghezza di riferimento (ad esempio, la larghezza del canvas su desktop)
-    return canvas.width / baseWidth;
-}
-
-// Funzione per aggiornare gli elementi del gioco (solo per mobile)
-function updateGameElements() {
-    if (isMobileDevice()) {
-        const scaleFactor = getScaleFactor();
-
-        // Ridimensiona il dinosauro
-        dino.width = 100 * scaleFactor;
-        dino.height = 100 * scaleFactor;
-        dino.y = canvas.height - dino.height - 50; // Posizione Y corretta
-
-        // Ridimensiona gli ostacoli
-        palms.forEach((obstacle) => {
-            if (obstacle.type === "palm") {
-                obstacle.width = palmWidth * scaleFactor;
-                obstacle.height = palmHeight * scaleFactor;
-            } else if (obstacle.type === "umbrella") {
-                obstacle.width = umbrellaWidth * scaleFactor;
-                obstacle.height = umbrellaHeight * scaleFactor;
-            }
-            obstacle.y = canvas.height - (obstacle.type === "palm" ? palmHeight : umbrellaHeight) - 50; // Posizione Y corretta
-        });
-
-        // Ridimensiona il granchio
-        granchio.width = 70 * scaleFactor;
-        granchio.height = 70 * scaleFactor;
-        granchio.y = canvas.height - granchio.height - 50; // Posizione Y corretta
-
-        // Ridimensiona il castello
-        castello.width = 50 * scaleFactor;
-        castello.height = 50 * scaleFactor;
-        castello.y = canvas.height - castello.height - 50; // Posizione Y corretta
-    }
+    // Ridimensiona e posiziona il video
+    resizeCoverVideo();
 }
 
 // Imposta le dimensioni iniziali del canvas
@@ -132,18 +174,14 @@ castelloImg.src = "assets/castello.png";
 const sfondoImg = new Image();
 sfondoImg.src = "assets/sfondo.png";
 
-const coverImg = new Image(); // Immagine della copertina
-coverImg.src = "assets/cover.png";
-
 // Verifica caricamento immagini
 let imagesLoaded = 0;
-const totalImages = 10; // Aggiunto "cover"
+const totalImages = 9; // Rimuovi 1 perché cover.png non viene più caricata
 
 function checkAllImagesLoaded() {
     imagesLoaded++;
     if (imagesLoaded === totalImages) {
         console.log("Tutte le immagini sono state caricate");
-        requestAnimationFrame(gameLoop); // Avvia il gioco dopo il caricamento
     }
 }
 
@@ -173,9 +211,6 @@ castelloImg.onerror = () => console.error("Errore nel caricamento di castello.pn
 
 sfondoImg.onload = checkAllImagesLoaded;
 sfondoImg.onerror = () => console.error("Errore nel caricamento di sfondo.png");
-
-coverImg.onload = checkAllImagesLoaded;
-coverImg.onerror = () => console.error("Errore nel caricamento di cover.png");
 
 // Variabili di gioco
 let dino = { 
@@ -412,7 +447,7 @@ function playAudioBuffer(buffer, volume = 0, loop = true) {
 // Avvia la riproduzione di mare.mp3 al primo salto
 function startMareAudio() {
     if (!mareAudio && mareBuffer) {
-        mareAudio = playAudioBuffer(mareBuffer, 1, true); // Volume iniziale al 100%, loop attivato
+        mareAudio = playAudioBuffer(mareBuffer, 0.75, true); // Volume iniziale al 75%, loop attivato
     }
 }
 
@@ -436,11 +471,11 @@ function startAdditionalAudio() {
 function updateAudioVolumes() {
     // Volume di mare.mp3 (riprodotto in loop fino al punteggio 10)
     if (score <= 10) {
-        const volume = 1 - (score * 0.09); // Diminuisce dal 100% al 10% al punteggio 10
+        const volume = 0.75 - (score * 0.0675); // Diminuisce dal 75% al 7.5% al punteggio 10
         if (mareAudio) mareAudio.gainNode.gain.value = volume;
     } else {
         if (mareAudio) {
-            mareAudio.gainNode.gain.value = 0.1; // Fissa il volume al 10% dopo il punteggio 10
+            mareAudio.gainNode.gain.value = 0.075; // Fissa il volume al 7.5% dopo il punteggio 10
         }
     }
 
@@ -502,11 +537,8 @@ function update(timestamp) {
         document.removeEventListener("keydown", handleJump);
         jumpButton.removeEventListener("click", handleJump);
 
-        // Abbassa gradualmente il volume degli audio aggiuntivi
-        if (gtrsAudio) fadeOutAudio(gtrsAudio, 5);
-        if (keysAudio) fadeOutAudio(keysAudio, 5);
-        if (bassAudio) fadeOutAudio(bassAudio, 5);
-        if (drumAudio) fadeOutAudio(drumAudio, 5);
+        // Non abbassare il volume degli audio aggiuntivi immediatamente
+        // Aspetta che il video finisca prima di abbassare il volume
     }
 
     // Animazione di Dina e gtr3: entrano da destra verso sinistra
@@ -571,12 +603,13 @@ function update(timestamp) {
     if (maskStartTime && mareAudio) {
         const elapsedTime = timestamp - maskStartTime;
         const fadeDuration = maskDuration; // Durata del fade (5 secondi)
-        const volume = Math.max(0, 1 - (elapsedTime / fadeDuration)); // Volume diminuisce da 1 a 0
+        const volume = Math.max(0, 0.75 - (elapsedTime / fadeDuration)); // Volume diminuisce da 0.75 a 0
         mareAudio.gainNode.gain.value = volume;
 
         // Se la maschera è completamente chiusa, imposta il volume a 0
         if (maskProgress >= 1) {
             mareAudio.gainNode.gain.value = 0;
+            mareAudio.source.stop(); // Ferma completamente l'audio "mare"
         }
     }
 
@@ -688,14 +721,42 @@ function draw() {
         drawHeartMask(ctx, maskProgress);
     }
 
-    // 3. Se il cuore è completamente chiuso, disegna la copertina
-    if (maskProgress >= 1) {
-        const coverHeight = canvas.height * 0.9; // 90% dell'altezza dello schermo
-        const coverWidth = (coverImg.width / coverImg.height) * coverHeight; // Mantieni le proporzioni
-        const coverX = (canvas.width - coverWidth) / 2; // Centra orizzontalmente
-        const coverY = (canvas.height - coverHeight) / 2; // Centra verticalmente
+    // 3. Se il cuore è completamente chiuso, mostra e riproduci il video
+    if (maskProgress >= 1 && !coverVideoPlayed) {
+        coverVideoPlayed = true; // Imposta la variabile a true per evitare ripetizioni
 
-        ctx.drawImage(coverImg, coverX, coverY, coverWidth, coverHeight);
+        // Mostra il video
+        coverVideo.style.display = "block";
+        coverVideo.style.opacity = "0"; // Inizia con opacità 0
+        setTimeout(() => {
+            coverVideo.style.opacity = "1"; // Fade-in del video
+        }, 100);
+
+        // Riproduci il video (assicurati che sia pronto)
+        if (coverVideo.readyState >= 3) { // 3 = HAVE_FUTURE_DATA, 4 = HAVE_ENOUGH_DATA
+            coverVideo.play();
+        }
+
+        // Aspetta che il video finisca prima di abbassare il volume degli audio aggiuntivi
+        coverVideo.onended = () => {
+            coverVideo.style.opacity = "0"; // Fade-out del video
+            setTimeout(() => {
+                coverVideo.pause(); // Blocca il video
+                coverVideo.currentTime = 0; // Riporta il video all'inizio
+                coverVideo.style.display = "none"; // Nascondi il video
+            }, 2000); // Aspetta 2 secondi per il fade-out
+
+            // Abbassa il volume degli audio aggiuntivi
+            if (mareAudio) {
+                mareAudio.gainNode.gain.setValueAtTime(mareAudio.gainNode.gain.value, audioContext.currentTime);
+                mareAudio.gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 1); // Fade out in 1 secondo
+                mareAudio.source.stop(); // Ferma completamente l'audio "mare"
+            }
+            if (gtrsAudio) fadeOutAudio(gtrsAudio, 1);
+            if (keysAudio) fadeOutAudio(keysAudio, 1);
+            if (bassAudio) fadeOutAudio(bassAudio, 1);
+            if (drumAudio) fadeOutAudio(drumAudio, 1);
+        };
     }
 }
 
