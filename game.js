@@ -59,8 +59,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let dino = {
         x: scaleValue(100), // Posizione X scalata
         y: scaleValue(250, false), // Posizione Y scalata
-        width: scaleValue(100), // Larghezza scalata
-        height: scaleValue(100, false), // Altezza scalata
+        width: scaleValue(108), // Larghezza uguale a "dina"
+        height: scaleValue(108, false), // Altezza uguale a "dina"
         isJumping: false,
         jumpSpeed: -15, // Salto più lento
         gravity: 0.5 // Gravità ridotta
@@ -136,8 +136,11 @@ document.addEventListener("DOMContentLoaded", () => {
         // Posiziona il tasto "Salta" al centro dello schermo, poco sotto la schermata di gioco
         jumpButton.style.position = "absolute";
         jumpButton.style.left = "50%";
-        jumpButton.style.bottom = "10px"; // Riduci la distanza dal basso
+        jumpButton.style.bottom = `${window.innerHeight * 0.05}px`; // 5% dal basso dello schermo
         jumpButton.style.transform = "translateX(-50%)";
+        jumpButton.style.width = `${scaleValue(150)}px`; // Larghezza scalata
+        jumpButton.style.height = `${scaleValue(50, false)}px`; // Altezza scalata
+        jumpButton.style.fontSize = `${scaleValue(20, false)}px`; // Dimensione del font scalata
 
         // Adeguare la posizione del dinosauro
         dino.y = canvas.height * 0.6; // Posizione Y del dinosauro (60% dell'altezza del canvas)
