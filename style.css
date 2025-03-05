@@ -51,5 +51,5 @@ canvas {
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    display: none; /* Nascondi di default */
+   /* display: none; /* Nascondi di default */
 }
