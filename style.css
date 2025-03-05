@@ -29,7 +29,7 @@ body {
     height: 60px; /* Altezza */
     font-size: 24px; /* Dimensione del font */
     background-color: #4CAF50; /* Colore di sfondo */
-    color: red; /* Colore del testo */
+    color: rgb(255, 9, 9); /* Colore del testo */
     border: none; /* Rimuovi il bordo */
     border-radius: 10px; /* Bordi arrotondati */
     cursor: pointer; /* Cambia il cursore al passaggio del mouse */
@@ -47,26 +47,4 @@ body {
     font-size: 20px;
     color: rgb(0, 0, 0);
     z-index: 1000;
-}
-
-/* Media query per dispositivi mobili */
-@media only screen and (max-width: 768px) {
-    #jumpButton {
-        display: block; /* Mostra il pulsante "Salta" su mobile */
-    }
-
-    #desktopMessage {
-        display: none; /* Nascondi il messaggio per desktop su mobile */
-    }
-}
-
-/* Media query per desktop */
-@media only screen and (min-width: 769px) {
-    #jumpButton {
-        display: none; /* Nascondi il pulsante "Salta" su desktop */
-    }
-
-    #desktopMessage {
-        display: block; /* Mostra il messaggio per desktop */
-    }
 }
