@@ -109,7 +109,6 @@ document.addEventListener("DOMContentLoaded", () => {
     jumpButton.style.border = "none";
     jumpButton.style.borderRadius = "10px";
     jumpButton.style.cursor = "pointer";
-    jumpButton.style.display = "none"; // Inizialmente nascosto
 
     // Funzione per ridimensionare e posizionare il video
     function resizeCoverVideo() {
