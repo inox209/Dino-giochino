@@ -52,7 +52,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // Funzione per scalare le dimensioni in base al canvas
     function scaleValue(value, isWidth = true) {
         const scaleFactor = isWidth ? canvas.width / referenceWidth : canvas.height / referenceHeight;
-        return value * scaleFactor;
+        let mobileScaleFactor = 1; // Fattore di riduzione per mobile
+
+        // Se è un dispositivo mobile, riduci le dimensioni del dinosauro
+        if (isMobileDevice()) {
+            mobileScaleFactor = 0.6; // Riduci le dimensioni del 40%
+        }
+
+        return value * scaleFactor * mobileScaleFactor;
     }
 
     // Variabili di gioco
@@ -102,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
         instructionsDiv.style.display = "none"; // Nascondi la finestra di istruzioni
         requestAnimationFrame(gameLoop); // Avvia il loop del gioco
     }
-    
+
     // Gestione degli eventi per chiudere la finestra di istruzioni
     document.addEventListener("keydown", (event) => {
         if (gamePaused && event.code === "Space") {
