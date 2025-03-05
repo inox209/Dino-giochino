@@ -4,10 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FortunaDino</title>
-    <link rel="stylesheet" href="style.css"> <!-- Collegamento al file CSS esterno -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
     <!-- Contenitore del canvas -->
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
@@ -21,22 +20,5 @@
 
     <!-- Script del gioco -->
     <script src="game.js"></script>
-
-    <!-- Script per rilevare il dispositivo mobile -->
-    <script>
-        // Mostra il pulsante di salto solo su dispositivi mobili
-        function checkIfMobile() {
-            if (/Mobi|Android/i.test(navigator.userAgent)) {
-                document.getElementById("jumpButton").style.display = "block"; // Mostra il pulsante su mobile
-                console.log("Dispositivo mobile rilevato, pulsante 'Salta' mostrato"); // Debug
-            } else {
-                document.getElementById("jumpButton").style.display = "none"; // Nascondi il pulsante su desktop
-                console.log("Dispositivo non mobile rilevato, pulsante 'Salta' nascosto"); // Debug
-            }
-        }
-
-        // Verifica se è un dispositivo mobile
-        checkIfMobile();
-    </script>
 </body>
 </html>
