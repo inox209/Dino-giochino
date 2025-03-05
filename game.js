@@ -66,6 +66,31 @@ document.addEventListener("DOMContentLoaded", () => {
         gravity: 0.35 // Gravità ridotta
     };
 
+    // Funzione per rilevare se l'utente sta utilizzando un dispositivo mobile
+    function isMobileDevice() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+
+    // Se l'utente sta utilizzando un dispositivo mobile, mostra il pulsante "Salta"
+    if (isMobileDevice()) {
+        jumpButton.style.display = "block"; // Mostra il pulsante "Salta"
+    } else {
+        // Su desktop, nascondi il pulsante "Salta" e mostra una scritta alternativa
+        jumpButton.style.display = "none"; // Nascondi il pulsante "Salta"
+
+        // Crea una scritta alternativa per desktop
+        const desktopMessage = document.createElement("div");
+        desktopMessage.textContent = "Salto = Barra Spaziatrice";
+        desktopMessage.style.position = "fixed";
+        desktopMessage.style.bottom = "20px";
+        desktopMessage.style.left = "50%";
+        desktopMessage.style.transform = "translateX(-50%)";
+        desktopMessage.style.fontSize = "20px";
+        desktopMessage.style.color = "white";
+        desktopMessage.style.zIndex = "1000";
+        document.body.appendChild(desktopMessage);
+    }
+
     // Funzione per chiudere la finestra di istruzioni e avviare il gioco
     function startGame() {
         gamePaused = false;
@@ -81,23 +106,23 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     jumpButton.addEventListener("click", handleJump);
-    jumpButton.addEventListener("touchstart", handleJump); // Aggiungi l'evento touch
+    jumpButton.addEventListener("touchstart", handleJump, { passive: true }); // Aggiungi l'evento touch
 
-    // Stile del pulsante "Salta"
-    jumpButton.style.position = "fixed"; // Usa "fixed" per garantire la visibilità
+    // Stile del pulsante "Salta" per mobile
+    jumpButton.style.position = "fixed";
     jumpButton.style.left = "50%";
-    jumpButton.style.bottom = "20px"; // Posizione fissa dal basso
+    jumpButton.style.bottom = "10%"; // Posizione più alta
     jumpButton.style.transform = "translateX(-50%)";
-    jumpButton.style.width = `${scaleValue(150)}px`; // Larghezza scalata
-    jumpButton.style.height = `${scaleValue(50, false)}px`; // Altezza scalata
-    jumpButton.style.fontSize = `${scaleValue(20, false)}px`; // Dimensione del font scalata
-    jumpButton.style.zIndex = "1000"; // Assicura che il pulsante sia sopra altri elementi
-    jumpButton.style.backgroundColor = "#4CAF50"; // Colore di sfondo
-    jumpButton.style.color = "white"; // Colore del testo
-    jumpButton.style.border = "none"; // Rimuovi il bordo
-    jumpButton.style.borderRadius = "10px"; // Bordi arrotondati
-    jumpButton.style.cursor = "pointer"; // Cambia il cursore al passaggio del mouse
-    jumpButton.style.display = "block"; // Assicurati che sia visibile
+    jumpButton.style.width = "150px"; // Larghezza aumentata
+    jumpButton.style.height = "60px"; // Altezza aumentata
+    jumpButton.style.fontSize = "24px"; // Dimensione del font aumentata
+    jumpButton.style.zIndex = "1000";
+    jumpButton.style.backgroundColor = "#4CAF50";
+    jumpButton.style.color = "white";
+    jumpButton.style.border = "none";
+    jumpButton.style.borderRadius = "10px";
+    jumpButton.style.cursor = "pointer";
+    jumpButton.style.display = "none"; // Inizialmente nascosto
 
     // Funzione per ridimensionare e posizionare il video
     function resizeCoverVideo() {
@@ -769,6 +794,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // Funzione per gestire il salto
     function handleJump(event) {
         if ((event.type === "keydown" && event.code === "Space") || event.type === "click" || event.type === "touchstart") {
+            if (gamePaused) {
+                startGame(); // Avvia il gioco se è in pausa
+            }
             if (!dino.isJumping) {
                 dino.isJumping = true;
                 dino.jumpSpeed = -15; // Resetta la velocità del salto
@@ -786,7 +814,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Gestione degli eventi
     document.addEventListener("keydown", handleJump);
     jumpButton.addEventListener("click", handleJump);
-    jumpButton.addEventListener("touchstart", handleJump); // Aggiungi l'evento touch
+    jumpButton.addEventListener("touchstart", handleJump, { passive: true }); // Aggiungi l'evento touch
 
     // Ridimensionamento dinamico del canvas
     window.addEventListener("resize", () => {
