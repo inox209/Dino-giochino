@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gioco del Dino</title>
+    <title>FortunaDino</title>
     <style>
         body {
             margin: 0;
@@ -12,46 +12,91 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color: #f0f0f0;
+            background-color: #000000;
             overflow: hidden;
+            font-family: Arial, sans-serif; /* Font di base */
         }
+
         #gameHeader {
             text-align: center;
             margin-bottom: 20px;
         }
+
         #gameTitle {
             font-size: 48px;
             font-weight: bold;
             color: #333;
         }
+
         #gameSubtitle {
             font-size: 24px;
             color: #666;
         }
+
         #gameContainer {
             width: 800px; /* Larghezza fissa del contenitore */
             height: 400px; /* Altezza fissa del contenitore */
             position: relative;
         }
+
         canvas {
             width: 100%; /* Occupa il 100% del contenitore */
             height: 100%; /* Occupa il 100% del contenitore */
             border: 1px solid #000;
-            background-color: #f7f7f7;
+            background-color: #ffffff;
         }
+
         /* Stile per il pulsante di salto su mobile */
         #jumpButton {
+            display: none; /* Inizialmente nascosto */
+            position: fixed;
+            bottom: 10%; /* Posizione verticale */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px; /* Larghezza */
+            height: 60px; /* Altezza */
+            font-size: 24px; /* Dimensione del font */
+            background-color: #4CAF50; /* Colore di sfondo */
+            color: white; /* Colore del testo */
+            border: none; /* Rimuovi il bordo */
+            border-radius: 10px; /* Bordi arrotondati */
+            cursor: pointer; /* Cambia il cursore al passaggio del mouse */
+            z-index: 1000; /* Assicura che il pulsante sia sopra altri elementi */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Ombra per un effetto 3D */
+        }
+
+        /* Messaggio per desktop */
+        #desktopMessage {
+            display: none; /* Inizialmente nascosto */
             position: fixed;
             bottom: 20px;
-            right: 20px;
-            padding: 15px 25px;
-            font-size: 18px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-           /* display: none; /* Nascondi di default */
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            color: #7d1010; /* Colore del testo */
+            z-index: 1000;
+        }
+
+        /* Media query per dispositivi mobili */
+        @media only screen and (max-width: 768px) {
+            #jumpButton {
+                display: block; /* Mostra il pulsante "Salta" su mobile */
+            }
+
+            #desktopMessage {
+                display: none; /* Nascondi il messaggio per desktop su mobile */
+            }
+        }
+
+        /* Media query per desktop */
+        @media only screen and (min-width: 769px) {
+            #jumpButton {
+                display: none; /* Nascondi il pulsante "Salta" su desktop */
+            }
+
+            #desktopMessage {
+                display: block; /* Mostra il messaggio per desktop */
+            }
         }
     </style>
 </head>
@@ -61,9 +106,17 @@
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
     </div>
+
     <!-- Pulsante di salto per dispositivi mobili -->
     <button id="jumpButton">Salta</button>
+
+    <!-- Messaggio per desktop -->
+    <div id="desktopMessage">Salto = Barra Spaziatrice</div>
+
+    <!-- Script del gioco -->
     <script src="game.js"></script>
+
+    <!-- Script per rilevare il dispositivo mobile -->
     <script>
         // Mostra il pulsante di salto solo su dispositivi mobili
         function checkIfMobile() {
