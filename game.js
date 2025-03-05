@@ -59,8 +59,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let dino = {
         x: scaleValue(100), // Posizione X scalata
         y: scaleValue(250, false), // Posizione Y scalata
-        width: scaleValue(150 * 3), // Larghezza aumentata di 20 volte
-        height: scaleValue(150 * 3, false), // Altezza aumentata di 20 volte
+        width: scaleValue(150 * 3), // Larghezza aumentata di 3 volte
+        height: scaleValue(150 * 3, false), // Altezza aumentata di 3 volte
         isJumping: false,
         jumpSpeed: 1, // Salto più lento
         gravity: 0.35 // Gravità ridotta
@@ -80,11 +80,24 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    jumpButton.addEventListener("click", () => {
-        if (gamePaused) {
-            startGame();
-        }
-    });
+    jumpButton.addEventListener("click", handleJump);
+    jumpButton.addEventListener("touchstart", handleJump); // Aggiungi l'evento touch
+
+    // Stile del pulsante "Salta"
+    jumpButton.style.position = "fixed"; // Usa "fixed" per garantire la visibilità
+    jumpButton.style.left = "50%";
+    jumpButton.style.bottom = "20px"; // Posizione fissa dal basso
+    jumpButton.style.transform = "translateX(-50%)";
+    jumpButton.style.width = `${scaleValue(150)}px`; // Larghezza scalata
+    jumpButton.style.height = `${scaleValue(50, false)}px`; // Altezza scalata
+    jumpButton.style.fontSize = `${scaleValue(20, false)}px`; // Dimensione del font scalata
+    jumpButton.style.zIndex = "1000"; // Assicura che il pulsante sia sopra altri elementi
+    jumpButton.style.backgroundColor = "#4CAF50"; // Colore di sfondo
+    jumpButton.style.color = "white"; // Colore del testo
+    jumpButton.style.border = "none"; // Rimuovi il bordo
+    jumpButton.style.borderRadius = "10px"; // Bordi arrotondati
+    jumpButton.style.cursor = "pointer"; // Cambia il cursore al passaggio del mouse
+    jumpButton.style.display = "block"; // Assicurati che sia visibile
 
     // Funzione per ridimensionare e posizionare il video
     function resizeCoverVideo() {
@@ -132,16 +145,6 @@ document.addEventListener("DOMContentLoaded", () => {
         canvas.style.left = "50%";
         canvas.style.top = "50%";
         canvas.style.transform = "translate(-50%, -50%)";
-
-        // Posiziona il tasto "Salta" al centro dello schermo, poco sotto la schermata di gioco
-        jumpButton.style.position = "fixed"; // Usa "fixed" per garantire la visibilità
-        jumpButton.style.left = "50%";
-        jumpButton.style.bottom = "20px"; // Posizione fissa dal basso
-        jumpButton.style.transform = "translateX(-50%)";
-        jumpButton.style.width = `${scaleValue(150)}px`; // Larghezza scalata
-        jumpButton.style.height = `${scaleValue(50, false)}px`; // Altezza scalata
-        jumpButton.style.fontSize = `${scaleValue(20, false)}px`; // Dimensione del font scalata
-        jumpButton.style.zIndex = "1000"; // Assicura che il pulsante sia sopra altri elementi
 
         // Adeguare la posizione del dinosauro
         dino.y = canvas.height * 0.6; // Posizione Y del dinosauro (60% dell'altezza del canvas)
@@ -765,7 +768,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Funzione per gestire il salto
     function handleJump(event) {
-        if ((event.type === "keydown" && event.code === "Space") || event.type === "click") {
+        if ((event.type === "keydown" && event.code === "Space") || event.type === "click" || event.type === "touchstart") {
             if (!dino.isJumping) {
                 dino.isJumping = true;
                 dino.jumpSpeed = -15; // Resetta la velocità del salto
@@ -783,6 +786,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Gestione degli eventi
     document.addEventListener("keydown", handleJump);
     jumpButton.addEventListener("click", handleJump);
+    jumpButton.addEventListener("touchstart", handleJump); // Aggiungi l'evento touch
 
     // Ridimensionamento dinamico del canvas
     window.addEventListener("resize", () => {
