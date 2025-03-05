@@ -6,12 +6,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // Elemento video per la copertina
     const coverVideo = document.createElement("video");
     coverVideo.src = "assets/cover.mp4";
-    coverVideo.loop = false; // Disabilita il loop
+    coverVideo.loop = false;
     coverVideo.muted = true;
     coverVideo.style.position = "absolute";
-    coverVideo.style.display = "none"; // Inizialmente nascosto
-    coverVideo.style.opacity = "0"; // Inizia con opacità 0
-    coverVideo.style.transition = "opacity 2s"; // Transizione di 2 secondi per il fade
+    coverVideo.style.display = "none";
+    coverVideo.style.opacity = "0";
+    coverVideo.style.transition = "opacity 2s";
     document.body.appendChild(coverVideo);
 
     // Variabile per controllare se il video "cover" è stato riprodotto
@@ -26,16 +26,16 @@ document.addEventListener("DOMContentLoaded", () => {
     instructionsDiv.style.top = "50%";
     instructionsDiv.style.left = "50%";
     instructionsDiv.style.transform = "translate(-50%, -50%)";
-    instructionsDiv.style.backgroundColor = "rgba(255, 255, 255, 0.9)"; // Sfondo bianco semi-trasparente
-    instructionsDiv.style.color = "#333"; // Colore del testo scuro
+    instructionsDiv.style.backgroundColor = "rgba(255, 255, 255, 0.9)";
+    instructionsDiv.style.color = "#333";
     instructionsDiv.style.padding = "30px";
     instructionsDiv.style.borderRadius = "15px";
     instructionsDiv.style.textAlign = "center";
     instructionsDiv.style.fontFamily = "Arial, sans-serif";
     instructionsDiv.style.zIndex = "1000";
-    instructionsDiv.style.width = "400px"; // Larghezza della finestra
-    instructionsDiv.style.boxShadow = "0 4px 10px rgba(0, 0, 0, 0.2)"; // Ombra per un effetto 3D
-    instructionsDiv.style.border = "2px solid rgb(97, 189, 255)"; // Bordo colorato
+    instructionsDiv.style.width = "400px";
+    instructionsDiv.style.boxShadow = "0 4px 10px rgba(0, 0, 0, 0.2)";
+    instructionsDiv.style.border = "2px solid rgb(97, 189, 255)";
     instructionsDiv.innerHTML = `
         <h1 style="font-size: 24px; color: rgb(97, 194, 255); margin-bottom: 20px;">FortunaDino!</h1>
         <p style="font-size: 16px; line-height: 1.6;">Sono sicuro che da qualche parte troverà la sua Dina...</p>
@@ -57,27 +57,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Variabili di gioco
     let dino = {
-        x: scaleValue(100), // Posizione X scalata
-        y: scaleValue(250, false), // Posizione Y scalata
-        width: scaleValue(150 * 3), // Larghezza aumentata di 3 volte
-        height: scaleValue(150 * 3, false), // Altezza aumentata di 3 volte
+        x: scaleValue(100),
+        y: scaleValue(250, false),
+        width: scaleValue(150 * 3),
+        height: scaleValue(150 * 3, false),
         isJumping: false,
-        jumpSpeed: 1, // Salto più lento
-        gravity: 0.35 // Gravità ridotta
+        jumpSpeed: 1,
+        gravity: 0.35
     };
 
-    // Funzione per rilevare se l'utente sta utilizzando un dispositivo mobile
-    function isMobileDevice() {
-        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    // Funzione per gestire il salto
+    function handleJump(event) {
+        if ((event.type === "keydown" && event.code === "Space") || event.type === "click" || event.type === "touchstart") {
+            if (gamePaused) {
+                startGame(); // Avvia il gioco se è in pausa
+            }
+            if (!dino.isJumping) {
+                dino.isJumping = true;
+                dino.jumpSpeed = -15; // Resetta la velocità del salto
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    loadAudioBuffers(); // Carica i buffer audio dopo il primo salto
+                }
+                if (!mareAudio) {
+                    startMareAudio(); // Avvia mare.mp3 al primo salto
+                }
+            }
+        }
     }
 
-    // Se l'utente sta utilizzando un dispositivo mobile, mostra il pulsante "Salta"
-    if (isMobileDevice()) {
-        jumpButton.style.display = "block"; // Mostra il pulsante "Salta"
-    } else {
-        // Su desktop, nascondi il pulsante "Salta" e mostra una scritta alternativa
-        jumpButton.style.display = "none"; // Nascondi il pulsante "Salta"
-    }
+    // Gestione degli eventi per chiudere la finestra di istruzioni
+    document.addEventListener("keydown", (event) => {
+        if (gamePaused && event.code === "Space") {
+            startGame();
+        }
+    });
+
+    jumpButton.addEventListener("click", handleJump);
+    jumpButton.addEventListener("touchstart", handleJump, { passive: true });
 
     // Funzione per chiudere la finestra di istruzioni e avviare il gioco
     function startGame() {
@@ -85,7 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
         instructionsDiv.style.display = "none"; // Nascondi la finestra di istruzioni
         requestAnimationFrame(gameLoop); // Avvia il loop del gioco
     }
-
+    
     // Gestione degli eventi per chiudere la finestra di istruzioni
     document.addEventListener("keydown", (event) => {
         if (gamePaused && event.code === "Space") {
