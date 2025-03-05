@@ -77,18 +77,6 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
         // Su desktop, nascondi il pulsante "Salta" e mostra una scritta alternativa
         jumpButton.style.display = "none"; // Nascondi il pulsante "Salta"
-
-        // Crea una scritta alternativa per desktop
-        const desktopMessage = document.createElement("div");
-        desktopMessage.textContent = "Salto = Barra Spaziatrice";
-        desktopMessage.style.position = "fixed";
-        desktopMessage.style.bottom = "20px";
-        desktopMessage.style.left = "50%";
-        desktopMessage.style.transform = "translateX(-50%)";
-        desktopMessage.style.fontSize = "20px";
-        desktopMessage.style.color = "white";
-        desktopMessage.style.zIndex = "1000";
-        document.body.appendChild(desktopMessage);
     }
 
     // Funzione per chiudere la finestra di istruzioni e avviare il gioco
@@ -106,7 +94,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     jumpButton.addEventListener("click", handleJump);
-    jumpButton.addEventListener("touchstart", handleJump, { passive: true }); // Aggiungi l'evento touch
 
     // Stile del pulsante "Salta" per mobile
     jumpButton.style.position = "fixed";
