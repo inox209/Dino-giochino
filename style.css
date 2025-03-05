@@ -1,8 +1,13 @@
 /* Stili generali */
 body {
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #000000;
     overflow: hidden;
-    background-color: #87CEEB; /* Colore di sfondo */
     font-family: Arial, sans-serif; /* Font di base */
 }
 
@@ -18,6 +23,13 @@ body {
     max-height: 100%;
 }
 
+/* Contenitore del canvas */
+#gameContainer {
+    width: 100%; /* Occupa il 100% della larghezza dello schermo */
+    height: 100vh; /* Occupa il 100% dell'altezza dello schermo */
+    position: relative;
+}
+
 /* Pulsante "Salta" */
 #jumpButton {
     display: none; /* Inizialmente nascosto */
@@ -29,7 +41,7 @@ body {
     height: 60px; /* Altezza */
     font-size: 24px; /* Dimensione del font */
     background-color: #4CAF50; /* Colore di sfondo */
-    color: rgb(255, 9, 9); /* Colore del testo */
+    color: rgb(255, 0, 0); /* Colore del testo */
     border: none; /* Rimuovi il bordo */
     border-radius: 10px; /* Bordi arrotondati */
     cursor: pointer; /* Cambia il cursore al passaggio del mouse */
@@ -45,6 +57,6 @@ body {
     left: 50%;
     transform: translateX(-50%);
     font-size: 20px;
-    color: rgb(0, 0, 0);
+    color: #7d1010; /* Colore del testo */
     z-index: 1000;
 }
