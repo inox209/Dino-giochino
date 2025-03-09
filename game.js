@@ -3,6 +3,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const ctx = canvas.getContext("2d");
     const jumpButton = document.getElementById("jumpButton");
 
+    // Funzione per rilevare se l'utente sta utilizzando un dispositivo mobile
+    function isMobileDevice() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+
     // Elemento video per la copertina
     const coverVideo = document.createElement("video");
     coverVideo.src = "assets/cover.mp4";
@@ -76,6 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Funzione per gestire il salto
     function handleJump(event) {
         if ((event.type === "keydown" && event.code === "Space") || event.type === "click" || event.type === "touchstart") {
+            event.preventDefault(); // Previeni il comportamento predefinito
             if (gamePaused) {
                 startGame(); // Avvia il gioco se è in pausa
             }
@@ -94,12 +100,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Gestione degli eventi per chiudere la finestra di istruzioni
-    document.addEventListener("keydown", (event) => {
-        if (gamePaused && event.code === "Space") {
-            startGame();
-        }
-    });
-
+    document.addEventListener("keydown", handleJump);
     jumpButton.addEventListener("click", handleJump);
     jumpButton.addEventListener("touchstart", handleJump, { passive: true });
 
@@ -109,15 +110,6 @@ document.addEventListener("DOMContentLoaded", () => {
         instructionsDiv.style.display = "none"; // Nascondi la finestra di istruzioni
         requestAnimationFrame(gameLoop); // Avvia il loop del gioco
     }
-
-    // Gestione degli eventi per chiudere la finestra di istruzioni
-    document.addEventListener("keydown", (event) => {
-        if (gamePaused && event.code === "Space") {
-            startGame();
-        }
-    });
-
-    jumpButton.addEventListener("click", handleJump);
 
     // Stile del pulsante "Salta" per mobile
     jumpButton.style.position = "fixed";
@@ -800,36 +792,6 @@ document.addEventListener("DOMContentLoaded", () => {
             };
         }
     }
-
-    // Funzione per gestire il salto
-    function handleJump(event) {
-        if ((event.type === "keydown" && event.code === "Space") || event.type === "click" || event.type === "touchstart") {
-            if (gamePaused) {
-                startGame(); // Avvia il gioco se è in pausa
-            }
-            if (!dino.isJumping) {
-                dino.isJumping = true;
-                dino.jumpSpeed = -15; // Resetta la velocità del salto
-                if (!audioContext) {
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    loadAudioBuffers(); // Carica i buffer audio dopo il primo salto
-                }
-                if (!mareAudio) {
-                    startMareAudio(); // Avvia mare.mp3 al primo salto
-                }
-            }
-        }
-    }
-
-    // Gestione degli eventi
-    document.addEventListener("keydown", handleJump);
-    jumpButton.addEventListener("click", handleJump);
-    jumpButton.addEventListener("touchstart", handleJump, { passive: true }); // Aggiungi l'evento touch
-
-    // Ridimensionamento dinamico del canvas
-    window.addEventListener("resize", () => {
-        resizeCanvas();
-    });
 
     // Funzione per caricare i buffer audio
     function loadAudioBuffers() {
