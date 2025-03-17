@@ -8,6 +8,11 @@ document.addEventListener("DOMContentLoaded", () => {
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     }
 
+    // Funzione per rilevare se il dispositivo è in modalità landscape
+    function isLandscape() {
+        return window.innerWidth > window.innerHeight;
+    }
+
     // Elemento video per la copertina
     const coverVideo = document.createElement("video");
     coverVideo.src = "assets/cover.mp4";
@@ -57,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Funzione per scalare le dimensioni in base al canvas
     function scaleValue(value, isWidth = true) {
         const scaleFactor = isWidth ? canvas.width / referenceWidth : canvas.height / referenceHeight;
-        let mobileScaleFactor = 1; // Fattore di riduzione per mobile
+        let mobileScaleFactor = 1;
 
         // Se è un dispositivo mobile, riduci le dimensioni del dinosauro
         if (isMobileDevice()) {
@@ -67,12 +72,17 @@ document.addEventListener("DOMContentLoaded", () => {
         return value * scaleFactor * mobileScaleFactor;
     }
 
+    // Funzione per ottenere l'offset verticale degli ostacoli su mobile
+    function getMobileObstacleOffset() {
+        return isMobileDevice() ? scaleValue(50, false) : 0; // Aggiungi un offset di 50 pixel su mobile
+    }
+
     // Variabili di gioco
     let dino = {
         x: scaleValue(100),
         y: scaleValue(250, false),
-        width: scaleValue(150 * 3),
-        height: scaleValue(150 * 3, false),
+        width: scaleValue(150 * (isMobileDevice() ? 2 : 3)), // Riduci le dimensioni di Dino su mobile
+        height: scaleValue(150 * (isMobileDevice() ? 2 : 3), false), // Riduci le dimensioni di Dino su mobile
         isJumping: false,
         jumpSpeed: 1,
         gravity: 0.35
@@ -112,19 +122,34 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Stile del pulsante "Salta" per mobile
-    jumpButton.style.position = "fixed";
-    jumpButton.style.left = "50%";
-    jumpButton.style.bottom = "10%"; // Posizione più alta
-    jumpButton.style.transform = "translateX(-50%)";
-    jumpButton.style.width = "150px"; // Larghezza aumentata
-    jumpButton.style.height = "60px"; // Altezza aumentata
-    jumpButton.style.fontSize = "24px"; // Dimensione del font aumentata
-    jumpButton.style.zIndex = "1000";
-    jumpButton.style.backgroundColor = "#4CAF50";
-    jumpButton.style.color = "red";
-    jumpButton.style.border = "none";
-    jumpButton.style.borderRadius = "10px";
-    jumpButton.style.cursor = "pointer";
+    function updateJumpButtonStyle() {
+        if (isMobileDevice()) {
+            if (isLandscape()) {
+                // Modalità landscape: posiziona il pulsante in basso a destra
+                jumpButton.style.position = "fixed";
+                jumpButton.style.right = "10px";
+                jumpButton.style.bottom = "10px";
+                jumpButton.style.left = "auto";
+                jumpButton.style.transform = "none";
+                jumpButton.style.width = "100px"; // Larghezza ridotta
+                jumpButton.style.height = "40px"; // Altezza ridotta
+                jumpButton.style.fontSize = "16px"; // Dimensione del font ridotta
+            } else {
+                // Modalità portrait: posiziona il pulsante in basso al centro
+                jumpButton.style.position = "fixed";
+                jumpButton.style.left = "50%";
+                jumpButton.style.bottom = "10%";
+                jumpButton.style.transform = "translateX(-50%)";
+                jumpButton.style.width = "150px"; // Larghezza aumentata
+                jumpButton.style.height = "60px"; // Altezza aumentata
+                jumpButton.style.fontSize = "24px"; // Dimensione del font aumentata
+            }
+        }
+    }
+
+    // Aggiorna lo stile del pulsante "Salta" all'avvio e al ridimensionamento della finestra
+    updateJumpButtonStyle();
+    window.addEventListener("resize", updateJumpButtonStyle);
 
     // Funzione per ridimensionare e posizionare il video
     function resizeCoverVideo() {
@@ -186,6 +211,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Ridimensiona il canvas quando la finestra viene ridimensionata (utile per il cambio orientamento su mobile)
     window.addEventListener("resize", () => {
         resizeCanvas();
+        updateJumpButtonStyle(); // Aggiorna lo stile del pulsante "Salta"
     });
 
     // Caricamento immagini
@@ -257,7 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Variabili di gioco
     let dina = {
         x: canvas.width, // Inizia fuori dallo schermo a destra
-        y: scaleValue(250, false), // Stessa altezza di dino
+        y: scaleValue(250, false) - (isMobileDevice() ? scaleValue(50, false) : 0), // Aggiusta la posizione Y su mobile
         width: scaleValue(108), // Ingrandita del 10%
         height: scaleValue(108, false), // Ingrandita del 10%
         visible: false, // Inizialmente invisibile
@@ -266,7 +292,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     let gtr3 = {
         x: canvas.width + scaleValue(200), // Inizia fuori dallo schermo a destra, più lontano di Dina
-        y: scaleValue(230, false), // Alzata di 20 pixel rispetto a Dina
+        y: scaleValue(230, false) - (isMobileDevice() ? scaleValue(50, false) : 0), // Aggiusta la posizione Y su mobile
         width: scaleValue(150), // Larghezza aumentata ulteriormente
         height: scaleValue(150, false), // Altezza aumentata ulteriormente
         visible: false, // Inizialmente invisibile
@@ -274,8 +300,20 @@ document.addEventListener("DOMContentLoaded", () => {
         isMoving: false // Controlla se gtr3 si sta muovendo
     };
     let palms = [];
-    let granchio = { x: canvas.width, y: scaleValue(250, false), width: scaleValue(70), height: scaleValue(70, false), visible: false }; // Granchio inizialmente invisibile
-    let castello = { x: canvas.width, y: canvas.height - scaleValue(80, false), width: scaleValue(50), height: scaleValue(50, false), visible: false }; // Castello più in basso
+    let granchio = { 
+        x: canvas.width, 
+        y: scaleValue(250, false) + getMobileObstacleOffset(), // Aggiusta la posizione Y su mobile
+        width: scaleValue(70), 
+        height: scaleValue(70, false), 
+        visible: false 
+    }; // Granchio inizialmente invisibile
+    let castello = { 
+        x: canvas.width, 
+        y: canvas.height - scaleValue(80, false) + getMobileObstacleOffset(), // Aggiusta la posizione Y su mobile
+        width: scaleValue(50), 
+        height: scaleValue(50, false), 
+        visible: false 
+    }; // Castello più in basso
     let scrollSpeed = 5; // Velocità iniziale ridotta
     let score = 0;
     let lastObstacleTime = 0;
@@ -329,8 +367,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
         const x = canvas.width;
         const y = type === "umbrella" 
-            ? canvas.height - umbrellaHeight - scaleValue(50, false) + umbrellaYOffset + 20 // Abbassa ombrelloni di 20 pixel
-            : canvas.height - palmHeight - scaleValue(50, false) + palmYOffset; // Ripristina palme alla posizione originale
+            ? canvas.height - umbrellaHeight - scaleValue(50, false) + umbrellaYOffset + 20 + getMobileObstacleOffset() // Abbassa ombrelloni di 20 pixel
+            : canvas.height - palmHeight - scaleValue(50, false) + palmYOffset + getMobileObstacleOffset(); // Ripristina palme alla posizione originale
         return { type, x, y, passed: false, hit: false };
     }
 
@@ -343,12 +381,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const x2 = x1 + obstacleSpacing; // Distanza orizzontale tra i due ostacoli
 
         const y1 = type1 === "umbrella" 
-            ? canvas.height - umbrellaHeight - scaleValue(50, false) + umbrellaYOffset + 20 // Abbassa ombrelloni di 20 pixel
-            : canvas.height - palmHeight - scaleValue(50, false) + palmYOffset; // Ripristina palme alla posizione originale
+            ? canvas.height - umbrellaHeight - scaleValue(50, false) + umbrellaYOffset + 20 + getMobileObstacleOffset() // Abbassa ombrelloni di 20 pixel
+            : canvas.height - palmHeight - scaleValue(50, false) + palmYOffset + getMobileObstacleOffset(); // Ripristina palme alla posizione originale
 
         const y2 = type2 === "umbrella" 
-            ? canvas.height - umbrellaHeight - scaleValue(50, false) + umbrellaYOffset + 20 // Abbassa ombrelloni di 20 pixel
-            : canvas.height - palmHeight - scaleValue(50, false) + palmYOffset; // Ripristina palme alla posizione originale
+            ? canvas.height - umbrellaHeight - scaleValue(50, false) + umbrellaYOffset + 20 + getMobileObstacleOffset() // Abbassa ombrelloni di 20 pixel
+            : canvas.height - palmHeight - scaleValue(50, false) + palmYOffset + getMobileObstacleOffset(); // Ripristina palme alla posizione originale
 
         return [
             { type: type1, x: x1, y: y1, passed: false, hit: false },
@@ -725,13 +763,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!gameEnded && timestamp - startTime > 5000) {
             if (isGranchioNext && !granchio.visible && !castello.visible && timestamp - lastGranchioTime > 6000) {
                 granchio.x = canvas.width;
-                granchio.y = canvas.height - granchio.height - scaleValue(50, false); // Posizione Y corretta
+                granchio.y = canvas.height - granchio.height - scaleValue(50, false) + getMobileObstacleOffset(); // Posizione Y corretta
                 granchio.visible = true;
                 isGranchioNext = false;
                 lastGranchioTime = timestamp;
             } else if (!isGranchioNext && !castello.visible && !granchio.visible && timestamp - lastCastelloTime > 6000) {
                 castello.x = canvas.width;
-                castello.y = canvas.height - castello.height - scaleValue(50, false); // Posizione Y corretta
+                castello.y = canvas.height - castello.height - scaleValue(50, false) + getMobileObstacleOffset(); // Posizione Y corretta
                 castello.visible = true;
                 isGranchioNext = true;
                 lastCastelloTime = timestamp;
