@@ -3,57 +3,116 @@ document.addEventListener("DOMContentLoaded", () => {
     const ctx = canvas.getContext("2d");
     const jumpButton = document.getElementById("jumpButton");
 
+    // Imposta le dimensioni del canvas
+    canvas.width = 800; // Larghezza predefinita
+    canvas.height = 400; // Altezza predefinita
+
     // Funzione per rilevare se l'utente sta utilizzando un dispositivo mobile
     function isMobileDevice() {
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     }
 
-    // Funzione per rilevare se il dispositivo è in modalità landscape
-    function isLandscape() {
-        return window.innerWidth > window.innerHeight;
+    // Funzione per ottenere l'offset verticale degli ostacoli su mobile
+    function getMobileObstacleOffset() {
+        return isMobileDevice() ? scaleValue(50, false) : 0; // Aggiungi un offset di 50 pixel su mobile
     }
 
-    // Elemento video per la copertina
-    const coverVideo = document.createElement("video");
-    coverVideo.src = "assets/cover.mp4";
-    coverVideo.loop = false;
-    coverVideo.muted = true;
-    coverVideo.style.position = "absolute";
-    coverVideo.style.display = "none";
-    coverVideo.style.opacity = "0";
-    coverVideo.style.transition = "opacity 2s";
-    document.body.appendChild(coverVideo);
+    // Stato del pop-up
+    let popupState = 0; // 0: TEST 1, 1: TEST 2, 2: TEST 3, 3: Gioco inizia
+    let gamePaused = true; // Variabile per controllare se il gioco è in pausa
+    console.log("Stato iniziale di gamePaused:", gamePaused); // Debug
+
+    // Messaggi in stile pixel art
+    const messages = [
+        { text: "TEST 1", type: "title", y: canvas.height / 2 },
+        { text: "TEST 2", type: "subtitle", y: canvas.height / 2 + 50 },
+        { text: "TEST 3", type: "description", y: canvas.height / 2 + 100 }
+    ];
+
+    // Funzione per disegnare il testo in stile pixel art
+    function drawPixelText(ctx, text, x, y, type) {
+        ctx.font = type === "title" ? "20px 'Press Start 2P'" : 
+                   type === "subtitle" ? "16px 'Press Start 2P'" : 
+                   "12px 'Press Start 2P'";
+        ctx.fillStyle = "white"; // Testo bianco per contrastare con lo sfondo nero
+        ctx.textAlign = "center"; // Allinea il testo al centro
+        ctx.fillText(text, x, y);
+        console.log(`Disegnato testo: ${text} a (${x}, ${y})`); // Debug
+    }
+
+// Elemento video per la copertina
+const coverVideo = document.createElement("video");
+coverVideo.src = "assets/cover.mp4";
+coverVideo.loop = false;
+coverVideo.muted = true;
+coverVideo.style.position = "absolute";
+coverVideo.style.display = "none";
+coverVideo.style.opacity = "0";
+coverVideo.style.transition = "opacity 2s";
+document.body.appendChild(coverVideo);
+
+// Ridimensionamento e posizionamento del video
+//coverVideo.style.width = `${window.innerWidth * 0.8}px`; // 80% della larghezza della finestra
+//coverVideo.style.height = `${window.innerHeight * 0.8}px`; // 80% dell'altezza della finestra
+//coverVideo.style.objectFit = "cover"; // Mantiene le proporzioni
+coverVideo.style.left = "50%"; // Centra orizzontalmente
+coverVideo.style.top = "50%"; // Centra verticalmente
+coverVideo.style.transform = "translate(-50%, -50%)"; // Centra il video
 
     // Variabile per controllare se il video "cover" è stato riprodotto
     let coverVideoPlayed = false;
 
-    // Variabile per controllare se il gioco è in pausa (finestra di istruzioni aperta)
-    let gamePaused = true;
+    // Funzione per gestire il salto
+    let isJumpButtonPressed = false; // Variabile per controllare se il tasto di salto è stato premuto
 
-    // Finestra di istruzioni
-    const instructionsDiv = document.createElement("div");
-    instructionsDiv.style.position = "absolute";
-    instructionsDiv.style.top = "50%";
-    instructionsDiv.style.left = "50%";
-    instructionsDiv.style.transform = "translate(-50%, -50%)";
-    instructionsDiv.style.backgroundColor = "rgba(255, 255, 255, 0.9)";
-    instructionsDiv.style.color = "#333";
-    instructionsDiv.style.padding = "30px";
-    instructionsDiv.style.borderRadius = "15px";
-    instructionsDiv.style.textAlign = "center";
-    instructionsDiv.style.fontFamily = "Arial, sans-serif";
-    instructionsDiv.style.zIndex = "1000";
-    instructionsDiv.style.width = "400px";
-    instructionsDiv.style.boxShadow = "0 4px 10px rgba(0, 0, 0, 0.2)";
-    instructionsDiv.style.border = "2px solid rgb(97, 189, 255)";
-    instructionsDiv.innerHTML = `
-        <h1 style="font-size: 24px; color: rgb(97, 194, 255); margin-bottom: 20px;">FortunaDino!</h1>
-        <p style="font-size: 16px; line-height: 1.6;">Sono sicuro che da qualche parte troverà la sua Dina...</p>
-        <p style="font-size: 16px; line-height: 1.6;">...ma solo tu puoi aiutarlo!</p>
-        <p style="font-size: 16px; line-height: 1.6;">In questa ricerca, Dino dovrà saltare alcuni ostacoli che si presenteranno man mano sul suo cammino e, se riuscirai a saltarli tutti, potrete finalmente godervi un po' di dolce compagnia.</p>
-        <p style="font-size: 18px; font-weight: bold; color: rgb(97, 194, 255); margin-top: 20px;">Salta per continuare</p>
-    `;
-    document.body.appendChild(instructionsDiv);
+    function handleJump(event) {
+        if (isJumpButtonPressed) return; // Se il tasto è già stato premuto, esci
+        isJumpButtonPressed = true; // Imposta il tasto come premuto
+    
+        if ((event.type === "keydown" && event.code === "Space") || event.type === "click" || event.type === "touchstart") {
+            event.preventDefault(); // Previeni il comportamento predefinito
+            console.log("Pulsante di salto premuto"); // Debug
+    
+            if (gamePaused) {
+                popupState++;
+                console.log(`Popup aggiornato: stato ${popupState}`); // Debug
+                if (popupState >= messages.length) {
+                    startGame(); // Avvia il gioco se è in pausa
+                } else {
+                    updatePopup();
+                }
+            } else if (!dino.isJumping) {
+                dino.isJumping = true;
+                dino.jumpSpeed = -15; // Resetta la velocità del salto
+            }
+        }
+    
+        // Resetta lo stato del tasto di salto dopo un breve ritardo
+        setTimeout(() => {
+            isJumpButtonPressed = false;
+        }, 300); // Ritardo di 300 millisecondi
+    }
+
+    // Funzione per aggiornare il pop-up
+    function updatePopup() {
+        if (popupState === 1) {
+            console.log("Riproduzione audio mare.mp3"); // Debug
+            startMareAudio();
+        }
+    }
+
+    // Funzione per chiudere la finestra di istruzioni e avviare il gioco
+    function startGame() {
+        console.log("Gioco avviato"); // Debug
+        gamePaused = false;
+        console.log("gamePaused impostato a:", gamePaused); // Debug
+        requestAnimationFrame(gameLoop); // Avvia il loop del gioco
+    }
+
+    // Gestione degli eventi per chiudere la finestra di istruzioni
+    document.addEventListener("keydown", handleJump);
+    jumpButton.addEventListener("click", handleJump);
+    jumpButton.addEventListener("touchstart", handleJump, { passive: true });
 
     // Dimensioni di riferimento (800x400)
     const referenceWidth = 800;
@@ -72,101 +131,122 @@ document.addEventListener("DOMContentLoaded", () => {
         return value * scaleFactor * mobileScaleFactor;
     }
 
-    // Funzione per ottenere l'offset verticale degli ostacoli su mobile
-    function getMobileObstacleOffset() {
-        return isMobileDevice() ? scaleValue(50, false) : 0; // Aggiungi un offset di 50 pixel su mobile
-    }
-
     // Variabili di gioco
     let dino = {
         x: scaleValue(100),
         y: scaleValue(250, false),
-        width: scaleValue(150 * (isMobileDevice() ? 2 : 3)), // Riduci le dimensioni di Dino su mobile
-        height: scaleValue(150 * (isMobileDevice() ? 2 : 3), false), // Riduci le dimensioni di Dino su mobile
+        width: scaleValue(150 * (isMobileDevice() ? 2 : 1)), // Riduci le dimensioni di Dino su mobile
+        height: scaleValue(150 * (isMobileDevice() ? 2 : 1), false), // Riduci le dimensioni di Dino su mobile
         isJumping: false,
         jumpSpeed: 1,
         gravity: 0.35
     };
 
-    // Funzione per gestire il salto
-    function handleJump(event) {
-        if ((event.type === "keydown" && event.code === "Space") || event.type === "click" || event.type === "touchstart") {
-            event.preventDefault(); // Previeni il comportamento predefinito
-            if (gamePaused) {
-                startGame(); // Avvia il gioco se è in pausa
+    // AudioContext per sincronizzare gli audio
+    let audioContext;
+    let mareBuffer, gtrsBuffer, keysBuffer, bassBuffer, drumBuffer;
+    let mareAudio, gtrsAudio, keysAudio, bassAudio, drumAudio;
+    let audioBuffersLoaded = false;
+
+    // Funzione per caricare un file audio come buffer
+    async function loadAudioBuffer(url) {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Failed to load ${url}: ${response.statusText}`);
             }
-            if (!dino.isJumping) {
-                dino.isJumping = true;
-                dino.jumpSpeed = -15; // Resetta la velocità del salto
-                if (!audioContext) {
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    loadAudioBuffers(); // Carica i buffer audio dopo il primo salto
-                }
-                if (!mareAudio) {
-                    startMareAudio(); // Avvia mare.mp3 al primo salto
-                }
-            }
+            const arrayBuffer = await response.arrayBuffer();
+            console.log(`Audio file loaded successfully: ${url}`); // Debug
+            return await audioContext.decodeAudioData(arrayBuffer);
+        } catch (error) {
+            console.error("Error loading audio buffer:", error);
+            throw error;
         }
     }
 
-    // Gestione degli eventi per chiudere la finestra di istruzioni
-    document.addEventListener("keydown", handleJump);
-    jumpButton.addEventListener("click", handleJump);
-    jumpButton.addEventListener("touchstart", handleJump, { passive: true });
-
-    // Funzione per chiudere la finestra di istruzioni e avviare il gioco
-    function startGame() {
-        gamePaused = false;
-        instructionsDiv.style.display = "none"; // Nascondi la finestra di istruzioni
-        requestAnimationFrame(gameLoop); // Avvia il loop del gioco
+    // Funzione per riprodurre un buffer audio in loop
+    function playAudioBuffer(buffer, volume = 0.75, loop = true) {
+        const source = audioContext.createBufferSource();
+        const gainNode = audioContext.createGain();
+        source.buffer = buffer;
+        source.loop = loop; // Abilita il loop
+        gainNode.gain.value = volume;
+        source.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        source.start(0);
+        console.log(`Audio started with volume ${volume}`); // Debug
+        return { source, gainNode };
     }
 
-    // Stile del pulsante "Salta" per mobile
-    function updateJumpButtonStyle() {
-        if (isMobileDevice()) {
-            if (isLandscape()) {
-                // Modalità landscape: posiziona il pulsante in basso a destra
-                jumpButton.style.position = "fixed";
-                jumpButton.style.right = "10px";
-                jumpButton.style.bottom = "10px";
-                jumpButton.style.left = "auto";
-                jumpButton.style.transform = "none";
-                jumpButton.style.width = "100px"; // Larghezza ridotta
-                jumpButton.style.height = "40px"; // Altezza ridotta
-                jumpButton.style.fontSize = "16px"; // Dimensione del font ridotta
-            } else {
-                // Modalità portrait: posiziona il pulsante in basso al centro
-                jumpButton.style.position = "fixed";
-                jumpButton.style.left = "50%";
-                jumpButton.style.bottom = "10%";
-                jumpButton.style.transform = "translateX(-50%)";
-                jumpButton.style.width = "150px"; // Larghezza aumentata
-                jumpButton.style.height = "60px"; // Altezza aumentata
-                jumpButton.style.fontSize = "24px"; // Dimensione del font aumentata
-            }
+    // Avvia la riproduzione di mare.mp3 all'apertura del pop-up
+    function startMareAudio() {
+        if (!mareAudio && mareBuffer) {
+            mareAudio = playAudioBuffer(mareBuffer, 0.5, true); // Volume iniziale al 75%, loop attivato
+            console.log("Mare audio started"); // Debug
+        } else {
+            console.log("Mare audio not started: mareBuffer is", mareBuffer); // Debug
         }
     }
 
-    // Aggiorna lo stile del pulsante "Salta" all'avvio e al ridimensionamento della finestra
-    updateJumpButtonStyle();
-    window.addEventListener("resize", updateJumpButtonStyle);
-
-    // Funzione per ridimensionare e posizionare il video
-    function resizeCoverVideo() {
-        const videoWidth = canvas.width * 0.8; // 80% della larghezza del canvas
-        const videoHeight = canvas.height * 0.8; // 80% dell'altezza del canvas
-
-        // Calcola le coordinate rispetto al canvas
-        const canvasRect = canvas.getBoundingClientRect(); // Ottieni la posizione del canvas nella pagina
-        const videoTop = canvasRect.top + (canvas.height - videoHeight) / 2; // Centra verticalmente rispetto al canvas
-        const videoLeft = canvasRect.left + (canvas.width - videoWidth) / 2; // Centra orizzontalmente rispetto al canvas
-
-        // Imposta le dimensioni e la posizione del video
-        coverVideo.style.width = `${videoWidth}px`;
-        coverVideo.style.height = `${videoHeight}px`;
-        coverVideo.style.top = `${videoTop}px`;
-        coverVideo.style.left = `${videoLeft}px`;
+    // Funzione per avviare gli audio aggiuntivi
+    function startAdditionalAudio() {
+        if (!gtrsAudio && gtrsBuffer) {
+            gtrsAudio = playAudioBuffer(gtrsBuffer, 0, true); // Volume iniziale a 0, aumenterà gradualmente
+            console.log("gtrs audio started");
+        }
+        if (!keysAudio && keysBuffer) {
+            keysAudio = playAudioBuffer(keysBuffer, 0, true); // Volume iniziale a 0, aumenterà gradualmente
+            console.log("keys audio started");
+        }
+        if (!bassAudio && bassBuffer) {
+            bassAudio = playAudioBuffer(bassBuffer, 0, true); // Volume iniziale a 0, aumenterà gradualmente
+            console.log("bass audio started");
+        }
+        if (!drumAudio && drumBuffer) {
+            drumAudio = playAudioBuffer(drumBuffer, 0, true); // Volume iniziale a 0, aumenterà gradualmente
+            console.log("drum audio started");
+        }
     }
+
+    // Carica i buffer audio all'avvio
+    function loadAudioBuffers() {
+        Promise.all([
+            loadAudioBuffer("assets/mare.mp3"),
+            loadAudioBuffer("assets/gtrs.mp3"),
+            loadAudioBuffer("assets/keys.mp3"),
+            loadAudioBuffer("assets/bass.mp3"),
+            loadAudioBuffer("assets/drum.mp3"),
+        ]).then(([mare, gtrs, keys, bass, drum]) => {
+            mareBuffer = mare;
+            gtrsBuffer = gtrs;
+            keysBuffer = keys;
+            bassBuffer = bass;
+            drumBuffer = drum;
+            audioBuffersLoaded = true; // Segnala che i buffer sono stati caricati
+            console.log("All audio buffers loaded"); // Debug
+        }).catch((error) => {
+            console.error("Error loading audio buffers:", error);
+        });
+    }
+
+    // Inizializza l'audioContext e carica i buffer audio
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    console.log("AudioContext initialized:", audioContext.state); // Debug
+
+    // Funzione per riattivare l'audioContext se sospeso
+    function resumeAudioContext() {
+        if (audioContext.state === "suspended") {
+            audioContext.resume().then(() => {
+                console.log("AudioContext riattivato");
+            });
+        }
+    }
+
+    // Aggiungi un listener per riattivare l'audioContext al primo clic
+    document.addEventListener("click", resumeAudioContext);
+
+    // Carica i buffer audio
+    loadAudioBuffers();
 
     // Funzione per ridimensionare il canvas in base al dispositivo
     function resizeCanvas() {
@@ -201,8 +281,9 @@ document.addEventListener("DOMContentLoaded", () => {
         // Adeguare la posizione del dinosauro
         dino.y = canvas.height * 0.6; // Posizione Y del dinosauro (60% dell'altezza del canvas)
 
-        // Ridimensiona e posiziona il video "cover"
-        resizeCoverVideo();
+          // Ridimensionamento dinamico del video
+        coverVideo.style.width = `${window.innerWidth * 0.8}px`; // 80% della larghezza della finestra
+        coverVideo.style.height = `${window.innerHeight * 0.8}px`; // 80% dell'altezza della finestra
     }
 
     // Ridimensiona il canvas all'avvio
@@ -211,7 +292,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // Ridimensiona il canvas quando la finestra viene ridimensionata (utile per il cambio orientamento su mobile)
     window.addEventListener("resize", () => {
         resizeCanvas();
-        updateJumpButtonStyle(); // Aggiorna lo stile del pulsante "Salta"
     });
 
     // Caricamento immagini
@@ -357,7 +437,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Funzione per calcolare l'intervallo di generazione in base alla velocità
     function getObstacleInterval(scrollSpeed) {
         // Calcola l'intervallo in modo che diminuisca gradualmente con la velocità
-        const interval = initialObstacleInterval - (scrollSpeed - 5) * 50; // Formula dinamica
+        const interval = initialObstacleInterval - (scrollSpeed - 5) * 60; // Formula dinamica
         return Math.max(interval, minObstacleInterval); // Non scendere sotto 2 secondi
     }
 
@@ -442,6 +522,26 @@ document.addEventListener("DOMContentLoaded", () => {
         // 1. Disegna lo sfondo
         ctx.drawImage(sfondoImg, 0, 0, canvas.width, canvas.height);
 
+         // 8. Disegna i messaggi di test
+         console.log("Coordinate dei messaggi:");
+         messages.forEach((message, index) => {
+             console.log(`Messaggio ${index + 1}:`, message.text, "Y:", message.y);
+        });
+        
+        console.log("Stato del gioco (gamePaused):", gamePaused);
+        console.log("Stato del pop-up (popupState):", popupState);
+        console.log("Numero di messaggi:", messages.length);
+
+        if (gamePaused && popupState < messages.length) {
+            console.log("Disegno le scritte di test");
+            messages.forEach((message, index) => {
+                if (index <= popupState) {
+                    console.log(`Disegnando: ${message.text}`);
+                    drawPixelText(ctx, message.text, canvas.width / 2, message.y, message.type);
+                }
+            });
+        }
+
         // 2. Disegna il granchio (se visibile)
         if (granchio.visible) {
             drawImage(ctx, granchioImg, granchio.x, granchio.y, granchio.width, granchio.height);
@@ -484,58 +584,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // 7. Disegna il punteggio
-        ctx.fillStyle = "black";
-        ctx.font = `${scaleValue(24)}px Arial`; // Scala il font
-        ctx.fillText(`Punteggio: ${score}`, scaleValue(20), scaleValue(30, false));
-    }
-
-    // AudioContext per sincronizzare gli audio
-    let audioContext;
-    let mareBuffer, gtrsBuffer, keysBuffer, bassBuffer, drumBuffer;
-    let mareAudio, gtrsAudio, keysAudio, bassAudio, drumAudio;
-    let audioBuffersLoaded = false;
-
-    // Funzione per caricare un file audio come buffer
-    async function loadAudioBuffer(url) {
-        const response = await fetch(url);
-        const arrayBuffer = await response.arrayBuffer();
-        return await audioContext.decodeAudioData(arrayBuffer);
-    }
-
-    // Funzione per riprodurre un buffer audio in loop
-    function playAudioBuffer(buffer, volume = 0, loop = true) {
-        const source = audioContext.createBufferSource();
-        const gainNode = audioContext.createGain();
-        source.buffer = buffer;
-        source.loop = loop; // Abilita il loop
-        gainNode.gain.value = volume;
-        source.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        source.start(0);
-        return { source, gainNode };
-    }
-
-    // Avvia la riproduzione di mare.mp3 al primo salto
-    function startMareAudio() {
-        if (!mareAudio && mareBuffer) {
-            mareAudio = playAudioBuffer(mareBuffer, 0.75, true); // Volume iniziale al 75%, loop attivato
-        }
-    }
-
-    // Avvia la riproduzione degli altri audio al punteggio 5
-    function startAdditionalAudio() {
-        if (!gtrsAudio && gtrsBuffer) {
-            gtrsAudio = playAudioBuffer(gtrsBuffer, 0, true); // Inizia con volume 0
-        }
-        if (!keysAudio && keysBuffer) {
-            keysAudio = playAudioBuffer(keysBuffer, 0, true); // Inizia con volume 0
-        }
-        if (!bassAudio && bassBuffer) {
-            bassAudio = playAudioBuffer(bassBuffer, 0, true); // Inizia con volume 0
-        }
-        if (!drumAudio && drumBuffer) {
-            drumAudio = playAudioBuffer(drumBuffer, 0, true); // Inizia con volume 0
-        }
+       // ctx.fillStyle = "white"; // Testo bianco per contrastare con lo sfondo nero
+       // ctx.font = `${scaleValue(24)}px Arial`; // Scala il font
+       // ctx.fillText(`Punteggio: ${score}`, scaleValue(20), scaleValue(30, false));
+        drawPixelText(ctx, `Punteggio: ${score}`, scaleValue(100), scaleValue(30, false), "title");
     }
 
     // Funzione per gestire il volume degli audio in base al punteggio
@@ -586,6 +638,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Loop del gioco
     function gameLoop(timestamp) {
+        console.log("gameLoop chiamato");
         if (!startTime) startTime = timestamp; // Imposta il tempo di inizio
 
         update(timestamp);
@@ -786,14 +839,28 @@ document.addEventListener("DOMContentLoaded", () => {
     function draw() {
         // 1. Disegna gli elementi del gioco
         drawGameElements(ctx);
-
+    
         // 2. Se la maschera è attiva, disegna la maschera a forma di cuore
         if (maskProgress > 0) {
             drawHeartMask(ctx, maskProgress);
         }
-
-        // 3. Se il cuore è completamente chiuso, mostra e riproduci il video
+    
+        // 3. Se il cuore è completamente chiuso, nascondi la scritta e il tasto "Salta"
         if (maskProgress >= 1 && !coverVideoPlayed) {
+            console.log("Maschera completamente chiusa - Nascondi la scritta e il tasto 'Salta'");
+    
+            // Nascondi la scritta "Salto = Barra spaziatrice" (versione desktop)
+            const desktopMessage = document.getElementById("desktopMessage");
+            if (desktopMessage) {
+                desktopMessage.style.display = "none";
+            }
+    
+            // Nascondi il tasto "Salta" (versione mobile)
+            const jumpButton = document.getElementById("jumpButton"); // Assicurati che l'elemento abbia l'ID corretto
+            if (jumpButton) {
+                jumpButton.style.display = "none";
+            }
+    
             coverVideoPlayed = true; // Imposta la variabile a true per evitare ripetizioni
 
             // Mostra il video
@@ -829,23 +896,5 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (drumAudio) fadeOutAudio(drumAudio, 1);
             };
         }
-    }
-
-    // Funzione per caricare i buffer audio
-    function loadAudioBuffers() {
-        Promise.all([
-            loadAudioBuffer("assets/mare.mp3"),
-            loadAudioBuffer("assets/gtrs.mp3"),
-            loadAudioBuffer("assets/keys.mp3"),
-            loadAudioBuffer("assets/bass.mp3"),
-            loadAudioBuffer("assets/drum.mp3"),
-        ]).then(([mare, gtrs, keys, bass, drum]) => {
-            mareBuffer = mare;
-            gtrsBuffer = gtrs;
-            keysBuffer = keys;
-            bassBuffer = bass;
-            drumBuffer = drum;
-            audioBuffersLoaded = true; // Segnala che i buffer sono stati caricati
-        });
     }
 });
