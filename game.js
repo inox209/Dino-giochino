@@ -9,7 +9,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Funzione per rilevare se l'utente sta utilizzando un dispositivo mobile
     function isMobileDevice() {
-        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        // Verifica le dimensioni dello schermo
+        const isSmallScreen = window.innerWidth <= 768; // Considera mobile se la larghezza è <= 768px
+
+        return isMobileUserAgent && isSmallScreen;
     }
 
     // Funzione per ottenere l'offset verticale degli ostacoli su mobile
