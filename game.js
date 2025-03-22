@@ -137,10 +137,10 @@ coverVideo.style.transform = "translate(-50%, -50%)"; // Centra il video
 
     // Variabili di gioco
     let dino = {
-        x: scaleValue(100),
-        y: scaleValue(250, false),
-        width: scaleValue(150 * (isMobileDevice() ? 0.6 : 0.5)), // Riduci le dimensioni di Dino su mobile
-        height: scaleValue(150 * (isMobileDevice() ? 0.6 : 0.5), false), // Riduci le dimensioni di Dino su mobile
+        x: scaleValue(100), // Posizione X
+        y: scaleValue(250, false), // Posizione Y
+        width: scaleValue(150), // Larghezza
+        height: scaleValue(150, false), // Altezza
         isJumping: false,
         jumpSpeed: 1,
         gravity: 0.35
