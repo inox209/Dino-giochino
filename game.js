@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Funzione per ottenere l'offset verticale degli ostacoli su mobile
     function getMobileObstacleOffset() {
-        return isMobileDevice() ? scaleValue(50, false) : 0; // Aggiungi un offset di 50 pixel su mobile
+        return isMobileDevice() ? scaleValue(100, false) : 0; // Aggiungi un offset di 50 pixel su mobile
     }
 
     // Stato del pop-up
@@ -139,8 +139,8 @@ coverVideo.style.transform = "translate(-50%, -50%)"; // Centra il video
     let dino = {
         x: scaleValue(100),
         y: scaleValue(250, false),
-        width: scaleValue(150 * (isMobileDevice() ? 2 : 1)), // Riduci le dimensioni di Dino su mobile
-        height: scaleValue(150 * (isMobileDevice() ? 2 : 1), false), // Riduci le dimensioni di Dino su mobile
+        width: scaleValue(150 * (isMobileDevice() ? 0.6 : 0.5)), // Riduci le dimensioni di Dino su mobile
+        height: scaleValue(150 * (isMobileDevice() ? 0.6 : 0.5), false), // Riduci le dimensioni di Dino su mobile
         isJumping: false,
         jumpSpeed: 1,
         gravity: 0.35
