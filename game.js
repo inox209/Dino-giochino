@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Funzione per ottenere l'offset verticale degli ostacoli su mobile
     function getMobileObstacleOffset() {
-        return isMobileDevice() ? scaleValue(100, false) : 0; // Aggiungi un offset di 50 pixel su mobile
+        return isMobileDevice() ? scaleValue(0, false) : 0; // Aggiungi un offset di 50 pixel su mobile
     }
 
     // Stato del pop-up
