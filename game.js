@@ -6,8 +6,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const referenceHeight = 400;
     const mobileBreakpoint = 768;
     const totalImages = 9;
-    const umbrellaYOffset = -30;
-    const palmYOffset = 15;
+    const umbrellaYOffset = -20;
+    const palmYOffset = 25;
     const maxPairProbability = 0.5;
 
     // =============================================
@@ -70,7 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (isMobileDevice()) {
             // Regole per MOBILE
             if (isDino) return value * scaleFactor * 0.8;   // Dino 20% più piccolo
-            if (isObstacle) return value * scaleFactor * 0.7; // Ostacoli 30% più piccoli
+            if (isObstacle) return value * scaleFactor * 0.5; // Ostacoli 30% più piccoli
             return value * scaleFactor;                     // Altri elementi normali
         } else {
             // Regole per DESKTOP
