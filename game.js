@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const mobileBreakpoint = 768;
     const totalImages = 9;
     const umbrellaYOffset = -30;
-    const palmYOffset = 25;
+    const palmYOffset = 15;
     const maxPairProbability = 0.5;
 
     // =============================================
