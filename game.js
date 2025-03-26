@@ -1,20 +1,73 @@
 document.addEventListener("DOMContentLoaded", () => {
+    // Imposta le dimensioni del canvas
+    //canvas.width = 800; // Larghezza predefinita
+    //canvas.height = 400; // Altezza predefinita
+    const referenceWidth = 800;
+    const referenceHeight = 400;
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
     const jumpButton = document.getElementById("jumpButton");
 
-    // Imposta le dimensioni del canvas
-    canvas.width = 800; // Larghezza predefinita
-    canvas.height = 400; // Altezza predefinita
+    // Elemento video per la copertina
+    const coverVideo = document.createElement("video");
+    coverVideo.src = "assets/cover.mp4";
+    coverVideo.loop = false;
+    coverVideo.muted = true;
+    coverVideo.style.position = "absolute";
+    coverVideo.style.display = "none";
+    coverVideo.style.opacity = "0";
+    coverVideo.style.transition = "opacity 2s";
+    document.body.appendChild(coverVideo);
+    coverVideo.playsInline = true;
+    coverVideo.setAttribute('playsinline', '');
+    coverVideo.setAttribute('webkit-playsinline', '');
+    
+    coverVideo.style.left = "50%"; // Centra orizzontalmente
+    coverVideo.style.top = "50%"; // Centra verticalmente
+    coverVideo.style.transform = "translate(-50%, -50%)"; // Centra il video
 
-    // Funzione per rilevare se l'utente sta utilizzando un dispositivo mobile
     function isMobileDevice() {
-    const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        // Verifica le dimensioni dello schermo
-        const isSmallScreen = window.innerWidth <= 768; // Considera mobile se la larghezza è <= 768px
-
-        return isMobileUserAgent && isSmallScreen;
+        const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            // Verifica le dimensioni dello schermo
+            const isSmallScreen = window.innerWidth <= 768; // Considera mobile se la larghezza è <= 768px
+        
+            return isMobileUserAgent && isSmallScreen;
     }
+
+    function scaleValue(value, isWidth = true, isDino = false) {
+        const scaleFactor = isWidth ? canvas.width / referenceWidth : canvas.height / referenceHeight;
+        //let mobileScaleFactor = 1;
+
+        // Se è un dispositivo mobile, riduci le dimensioni del dinosauro
+        if (isMobileDevice()) {
+            if (isDino) {
+                mobileScaleFactor = 0.6; // Riduci solo il dinosauro del 40%
+            } else {
+                mobileScaleFactor = 1.2; // Aumenta gli altri elementi del 20%
+            }
+        }
+
+        return value * scaleFactor //* mobileScaleFactor;
+    }
+
+    let dino = {
+        x: scaleValue(100), // Posizione X
+        y: scaleValue(250, false), // Posizione Y
+        width: scaleValue(150, true, true), // Larghezza
+        height: scaleValue(150, false, true), // Altezza
+        isJumping: false,
+        jumpSpeed: 1,
+        gravity: 0.35
+    };
+    let dina = {
+        x: canvas.width, // Inizia fuori dallo schermo a destra
+        y: scaleValue(250, false), //- (isMobileDevice() ? scaleValue(50, false) : 0), // Aggiusta la posizione Y su mobile
+        width: scaleValue(108), // Ingrandita del 10%
+        height: scaleValue(108, false), // Ingrandita del 10%
+        visible: false, // Inizialmente invisibile
+        targetX: canvas.width - scaleValue(150), //scaleValue(isMobileDevice() ? 200 : 150), // Posizione finale a destra
+        isMoving: false // Controlla se Dina si sta muovendo
+    };
 
     // Funzione per ottenere l'offset verticale degli ostacoli su mobile
     function getMobileObstacleOffset() {
@@ -43,25 +96,6 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.fillText(text, x, y);
         console.log(`Disegnato testo: ${text} a (${x}, ${y})`); // Debug
     }
-
-// Elemento video per la copertina
-const coverVideo = document.createElement("video");
-coverVideo.src = "assets/cover.mp4";
-coverVideo.loop = false;
-coverVideo.muted = true;
-coverVideo.style.position = "absolute";
-coverVideo.style.display = "none";
-coverVideo.style.opacity = "0";
-coverVideo.style.transition = "opacity 2s";
-document.body.appendChild(coverVideo);
-
-// Ridimensionamento e posizionamento del video
-//coverVideo.style.width = `${window.innerWidth * 0.8}px`; // 80% della larghezza della finestra
-//coverVideo.style.height = `${window.innerHeight * 0.8}px`; // 80% dell'altezza della finestra
-//coverVideo.style.objectFit = "cover"; // Mantiene le proporzioni
-coverVideo.style.left = "50%"; // Centra orizzontalmente
-coverVideo.style.top = "50%"; // Centra verticalmente
-coverVideo.style.transform = "translate(-50%, -50%)"; // Centra il video
 
     // Variabile per controllare se il video "cover" è stato riprodotto
     let coverVideoPlayed = false;
@@ -119,32 +153,8 @@ coverVideo.style.transform = "translate(-50%, -50%)"; // Centra il video
     jumpButton.addEventListener("touchstart", handleJump, { passive: true });
 
     // Dimensioni di riferimento (800x400)
-    const referenceWidth = 800;
-    const referenceHeight = 400;
-
-    // Funzione per scalare le dimensioni in base al canvas
-    function scaleValue(value, isWidth = true) {
-        const scaleFactor = isWidth ? canvas.width / referenceWidth : canvas.height / referenceHeight;
-        let mobileScaleFactor = 1;
-
-        // Se è un dispositivo mobile, riduci le dimensioni del dinosauro
-        if (isMobileDevice()) {
-            mobileScaleFactor = 0.6; // Riduci le dimensioni del 40%
-        }
-
-        return value * scaleFactor * mobileScaleFactor;
-    }
-
-    // Variabili di gioco
-    let dino = {
-        x: scaleValue(100), // Posizione X
-        y: scaleValue(250, false), // Posizione Y
-        width: scaleValue(150), // Larghezza
-        height: scaleValue(150, false), // Altezza
-        isJumping: false,
-        jumpSpeed: 1,
-        gravity: 0.35
-    };
+    //const referenceWidth = 800;
+    //const referenceHeight = 400;
 
     // AudioContext per sincronizzare gli audio
     let audioContext;
@@ -254,17 +264,15 @@ coverVideo.style.transform = "translate(-50%, -50%)"; // Centra il video
 
     // Funzione per ridimensionare il canvas in base al dispositivo
     function resizeCanvas() {
-        const maxWidth = window.innerWidth * 0.9; // 90% della larghezza dello schermo
-        const maxHeight = window.innerHeight * 0.9; // 90% dell'altezza dello schermo
+        const isMobile = isMobileDevice();
+        const maxWidth = window.innerWidth * (isMobile ? 0.95 : 0.9);
+        const maxHeight = window.innerHeight * (isMobile ? 0.95 : 0.9);
 
         // Proporzioni originali del canvas (800x400)
         const aspectRatio = referenceWidth / referenceHeight;
-
-        // Calcola le dimensioni del canvas mantenendo le proporzioni
         let canvasWidth = maxWidth;
         let canvasHeight = canvasWidth / aspectRatio;
-
-        // Se l'altezza calcolata supera l'altezza massima, riduci la larghezza
+    
         if (canvasHeight > maxHeight) {
             canvasHeight = maxHeight;
             canvasWidth = canvasHeight * aspectRatio;
@@ -276,6 +284,10 @@ coverVideo.style.transform = "translate(-50%, -50%)"; // Centra il video
         canvas.style.width = `${canvasWidth}px`;
         canvas.style.height = `${canvasHeight}px`;
 
+        // Reset delle posizioni
+        dino.y = canvas.height * 0.6;
+        dina.y = scaleValue(250, false) - (isMobile ? scaleValue(30, false) : 0);
+
         // Centra il canvas nello schermo
         canvas.style.position = "absolute";
         canvas.style.left = "50%";
@@ -283,11 +295,14 @@ coverVideo.style.transform = "translate(-50%, -50%)"; // Centra il video
         canvas.style.transform = "translate(-50%, -50%)";
 
         // Adeguare la posizione del dinosauro
-        dino.y = canvas.height * 0.6; // Posizione Y del dinosauro (60% dell'altezza del canvas)
+        //dino.y = canvas.height * 0.6; // Posizione Y del dinosauro (60% dell'altezza del canvas)
 
-          // Ridimensionamento dinamico del video
-        coverVideo.style.width = `${window.innerWidth * 0.8}px`; // 80% della larghezza della finestra
-        coverVideo.style.height = `${window.innerHeight * 0.8}px`; // 80% dell'altezza della finestra
+        // Ridimensionamento dinamico del video
+        if(coverVideo) {
+        coverVideo.style.width = `${Math.min(window.innerWidth * 0.9, canvas.width)}px`;
+        coverVideo.style.height = `${Math.min(window.innerHeight * 0.9, canvas.height)}px`;
+        coverVideo.style.objectFit = "contain";
+        }
     }
 
     // Ridimensiona il canvas all'avvio
@@ -365,18 +380,9 @@ coverVideo.style.transform = "translate(-50%, -50%)"; // Centra il video
     sfondoImg.onerror = () => console.error("Errore nel caricamento di sfondo.png");
 
     // Variabili di gioco
-    let dina = {
-        x: canvas.width, // Inizia fuori dallo schermo a destra
-        y: scaleValue(250, false) - (isMobileDevice() ? scaleValue(50, false) : 0), // Aggiusta la posizione Y su mobile
-        width: scaleValue(108), // Ingrandita del 10%
-        height: scaleValue(108, false), // Ingrandita del 10%
-        visible: false, // Inizialmente invisibile
-        targetX: canvas.width - scaleValue(150), // Posizione finale a destra
-        isMoving: false // Controlla se Dina si sta muovendo
-    };
     let gtr3 = {
         x: canvas.width + scaleValue(200), // Inizia fuori dallo schermo a destra, più lontano di Dina
-        y: scaleValue(230, false) - (isMobileDevice() ? scaleValue(50, false) : 0), // Aggiusta la posizione Y su mobile
+        y: scaleValue(230, false), //- (isMobileDevice() ? scaleValue(50, false) : 0), // Aggiusta la posizione Y su mobile
         width: scaleValue(150), // Larghezza aumentata ulteriormente
         height: scaleValue(150, false), // Altezza aumentata ulteriormente
         visible: false, // Inizialmente invisibile
@@ -398,7 +404,7 @@ coverVideo.style.transform = "translate(-50%, -50%)"; // Centra il video
         height: scaleValue(50, false), 
         visible: false 
     }; // Castello più in basso
-    let scrollSpeed = 5; // Velocità iniziale ridotta
+    let scrollSpeed = isMobileDevice() ? 3 : 5; // Velocità iniziale ridotta per mobile
     let score = 0;
     let lastObstacleTime = 0;
     let lastGranchioTime = 0; // Tempo dell'ultimo granchio generato
@@ -573,24 +579,20 @@ coverVideo.style.transform = "translate(-50%, -50%)"; // Centra il video
             drawImage(ctx, dinaImg, dina.x, dina.y, dina.width, dina.height);
 
             // Disegna la chitarra gtr1 sopra Dina
-            const gtr1X = dina.x + scaleValue(10); // Spostata leggermente a sinistra
-            const gtr1Y = dina.y + scaleValue(10, false); // Spostata leggermente verso il basso
+            const gtr1X = dina.x + scaleValue(10); //scaleValue(isMobileDevice() ? 20 : 10); // Spostata leggermente a sinistra
+            const gtr1Y = dina.y + scaleValue(10, false); //scaleValue(isMobileDevice() ? 20 : 10, false); // Spostata leggermente verso il basso
             const gtr1Width = scaleValue(80); // Larghezza della chitarra
             const gtr1Height = scaleValue(80, false); // Altezza della chitarra
             drawImage(ctx, gtr1Img, gtr1X, gtr1Y, gtr1Width, gtr1Height);
 
             // Disegna la chitarra gtr3 a sinistra di Dina
-            const gtr3X = dina.x - scaleValue(150); // Posizionata a sinistra di Dina (con spazio aggiuntivo)
-            const gtr3Y = dina.y - scaleValue(20, false); // Alzata di 20 pixel rispetto a Dina
+            const gtr3X = dina.x - scaleValue(150); //scaleValue(isMobileDevice() ? 180 : 150); // Posizionata a sinistra di Dina (con spazio aggiuntivo)
+            const gtr3Y = dina.y - scaleValue(20, false); //scaleValue(isMobileDevice() ? 30 : 20, false); // Alzata di 20 pixel rispetto a Dina
             const gtr3Width = scaleValue(150); // Larghezza aumentata ulteriormente
             const gtr3Height = scaleValue(150, false); // Altezza aumentata ulteriormente
             drawImage(ctx, gtr3Img, gtr3X, gtr3Y, gtr3Width, gtr3Height);
         }
 
-        // 7. Disegna il punteggio
-       // ctx.fillStyle = "white"; // Testo bianco per contrastare con lo sfondo nero
-       // ctx.font = `${scaleValue(24)}px Arial`; // Scala il font
-       // ctx.fillText(`Punteggio: ${score}`, scaleValue(20), scaleValue(30, false));
         drawPixelText(ctx, `Punteggio: ${score}`, scaleValue(100), scaleValue(30, false), "title");
     }
 
