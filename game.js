@@ -1,13 +1,21 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // Imposta le dimensioni del canvas
-    //canvas.width = 800; // Larghezza predefinita
-    //canvas.height = 400; // Altezza predefinita
+    // =============================================
+    // 1. COSTANTI DI CONFIGURAZIONE BASE
+    // =============================================
     const referenceWidth = 800;
     const referenceHeight = 400;
+    const mobileBreakpoint = 768;
+    const totalImages = 9;
+    const umbrellaYOffset = -20;
+    const palmYOffset = 15;
+    const maxPairProbability = 0.5;
+
+    // =============================================
+    // 2. INIZIALIZZAZIONE ELEMENTI DOM
+    // =============================================
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
     const jumpButton = document.getElementById("jumpButton");
-
     // Elemento video per la copertina
     const coverVideo = document.createElement("video");
     coverVideo.src = "assets/cover.mp4";
@@ -18,61 +26,212 @@ document.addEventListener("DOMContentLoaded", () => {
     coverVideo.style.opacity = "0";
     coverVideo.style.transition = "opacity 2s";
     document.body.appendChild(coverVideo);
-    coverVideo.playsInline = true;
-    coverVideo.setAttribute('playsinline', '');
-    coverVideo.setAttribute('webkit-playsinline', '');
-    
-    coverVideo.style.left = "50%"; // Centra orizzontalmente
-    coverVideo.style.top = "50%"; // Centra verticalmente
-    coverVideo.style.transform = "translate(-50%, -50%)"; // Centra il video
+    //coverVideo.playsInline = true;
+    //coverVideo.setAttribute('playsinline', '');
+    //coverVideo.setAttribute('webkit-playsinline', ''); 
+    //coverVideo.style.left = "50%";
+    //coverVideo.style.top = "50%";
+    //coverVideo.style.transform = "translate(-50%, -50%)";
+    // Caricamento immagini
+    const dinoImg = new Image();
+    dinoImg.src = "assets/dino.png";
+    const dinaImg = new Image();
+    dinaImg.src = "assets/dina.png";
+    const gtr1Img = new Image();
+    gtr1Img.src = "assets/gtr1.png";
+    const gtr3Img = new Image();
+    gtr3Img.src = "assets/gtr3.png";
+    const palmImg = new Image();
+    palmImg.src = "assets/palm.png";
+    const umbrellaImg = new Image();
+    umbrellaImg.src = "assets/ombrellone.png";
+    const granchioImg = new Image();
+    granchioImg.src = "assets/granchio.png";
+    const castelloImg = new Image();
+    castelloImg.src = "assets/castello.png";
+    const sfondoImg = new Image();
+    sfondoImg.src = "assets/sfondo.png";
+    // Caricamenro audio
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    let mareBuffer, gtrsBuffer, keysBuffer, bassBuffer, drumBuffer;
+    let mareAudio, gtrsAudio, keysAudio, bassAudio, drumAudio;
 
+    // =============================================
+    // 3. FUNZIONI UTILITY
+    // =============================================
     function isMobileDevice() {
-        const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            // Verifica le dimensioni dello schermo
-            const isSmallScreen = window.innerWidth <= 768; // Considera mobile se la larghezza è <= 768px
-        
-            return isMobileUserAgent && isSmallScreen;
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+               window.innerWidth <= mobileBreakpoint;
     }
 
     function scaleValue(value, isWidth = true, isDino = false) {
         const scaleFactor = isWidth ? canvas.width / referenceWidth : canvas.height / referenceHeight;
-        //let mobileScaleFactor = 1;
-
-        // Se è un dispositivo mobile, riduci le dimensioni del dinosauro
         if (isMobileDevice()) {
-            if (isDino) {
-                mobileScaleFactor = 0.6; // Riduci solo il dinosauro del 40%
-            } else {
-                mobileScaleFactor = 1.2; // Aumenta gli altri elementi del 20%
-            }
+            if (isDino) return value * scaleFactor * 0.8;
+            return value * scaleFactor * 1.1;
         }
-
-        return value * scaleFactor //* mobileScaleFactor;
+        return value * scaleFactor * (isDino ? 0.6 : 1);
     }
 
+    function getMobileObstacleOffset() {
+        return isMobileDevice() ? scaleValue(30, false) : 0;
+    }
+
+    // =============================================
+    // 4. INIZIALIZZAZIONE OGGETTI DI GIOCO
+    // =============================================
     let dino = {
-        x: scaleValue(100), // Posizione X
-        y: scaleValue(250, false), // Posizione Y
-        width: scaleValue(150, true, true), // Larghezza
-        height: scaleValue(150, false, true), // Altezza
+        x: scaleValue(100),
+        y: scaleValue(250, false),
+        width: scaleValue(150, true, true),
+        height: scaleValue(150, false, true),
         isJumping: false,
-        jumpSpeed: 1,
-        gravity: 0.35
+        jumpSpeed: isMobileDevice() ? -12 : -15,
+        gravity: isMobileDevice() ? 0.5 : 0.35
     };
+
     let dina = {
-        x: canvas.width, // Inizia fuori dallo schermo a destra
-        y: scaleValue(250, false), //- (isMobileDevice() ? scaleValue(50, false) : 0), // Aggiusta la posizione Y su mobile
-        width: scaleValue(108), // Ingrandita del 10%
-        height: scaleValue(108, false), // Ingrandita del 10%
-        visible: false, // Inizialmente invisibile
-        targetX: canvas.width - scaleValue(150), //scaleValue(isMobileDevice() ? 200 : 150), // Posizione finale a destra
-        isMoving: false // Controlla se Dina si sta muovendo
+        x: canvas.width,
+        y: isMobileDevice() ? scaleValue(200, false) : scaleValue(250, false),
+        width: scaleValue(108),
+        height: scaleValue(108, false),
+        visible: false,
+        targetX: canvas.width - (isMobileDevice() ? scaleValue(180) : scaleValue(150)),
+        isMoving: false
     };
+
+    let gtr3 = {
+        x: canvas.width + scaleValue(200),
+        y: isMobileDevice() ? scaleValue(180, false) : scaleValue(230, false),
+        width: scaleValue(150),
+        height: scaleValue(150, false),
+        visible: false,
+        targetX: canvas.width - (isMobileDevice() ? scaleValue(350) : scaleValue(300)),
+        isMoving: false
+    };
+
+    let palms = [];
+    let granchio = { 
+        x: canvas.width, 
+        y: canvas.height - scaleValue(70, false) - scaleValue(50, false) - getMobileObstacleOffset(),
+        width: scaleValue(70 * 2), 
+        height: scaleValue(70 * 2, false), 
+        visible: false 
+    };
+
+    let castello = { 
+        x: canvas.width, 
+        y: canvas.height - scaleValue(50, false) - scaleValue(50, false) - getMobileObstacleOffset(),
+        width: scaleValue(50 * 2.4), 
+        height: scaleValue(50 * 2.4, false), 
+        visible: false 
+    };
+
+    // =============================================
+    // 5. CARICAMENTO RISORSE
+    // =============================================
+    function loadAudioBuffers() {
+        Promise.all([
+            loadAudioBuffer("assets/mare.mp3"),
+            loadAudioBuffer("assets/gtrs.mp3"),
+            loadAudioBuffer("assets/keys.mp3"),
+            loadAudioBuffer("assets/bass.mp3"),
+            loadAudioBuffer("assets/drum.mp3"),
+           ]).then(([mare, gtrs, keys, bass, drum]) => {
+            mareBuffer = mare;
+            gtrsBuffer = gtrs;
+            keysBuffer = keys;
+            bassBuffer = bass;
+            drumBuffer = drum;
+            audioBuffersLoaded = true; // Segnala che i buffer sono stati caricati
+            console.log("All audio buffers loaded"); // Debug
+        }).catch((error) => {
+            console.error("Error loading audio buffers:", error);
+        });
+    }
+
+    function checkAllImagesLoaded() {
+        imagesLoaded++;
+        if (imagesLoaded === totalImages) {
+            console.log("Tutte le immagini sono state caricate");
+        }
+    }
+
+    // =============================================
+    // 6. FUNZIONI DI GIOCO PRINCIPALI
+    // =============================================
+    function resizeCanvas() {
+        const isMobile = isMobileDevice();
+        const maxWidth = window.innerWidth * (isMobile ? 0.95 : 0.9);
+        const maxHeight = window.innerHeight * (isMobile ? 0.95 : 0.9);
+
+        // Proporzioni originali del canvas (800x400)
+        const aspectRatio = referenceWidth / referenceHeight;
+        let canvasWidth = maxWidth;
+        let canvasHeight = canvasWidth / aspectRatio;
+    
+        if (canvasHeight > maxHeight) {
+            canvasHeight = maxHeight;
+            canvasWidth = canvasHeight * aspectRatio;
+        }
+
+        // Imposta le dimensioni del canvas
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+        canvas.style.width = `${canvasWidth}px`;
+        canvas.style.height = `${canvasHeight}px`;
+
+        // Reset delle posizioni
+        dino.y = canvas.height * 0.6;
+        dina.y = scaleValue(250, false) - (isMobile ? scaleValue(30, false) : 0);
+
+        // Centra il canvas nello schermo
+        canvas.style.position = "absolute";
+        canvas.style.left = "50%";
+        canvas.style.top = "50%";
+        canvas.style.transform = "translate(-50%, -50%)";
+
+        // Adeguare la posizione del dinosauro
+        //dino.y = canvas.height * 0.6; // Posizione Y del dinosauro (60% dell'altezza del canvas)
+
+        // Ridimensionamento dinamico del video
+        if(coverVideo) {
+        coverVideo.style.width = `${Math.min(window.innerWidth * 0.9, canvas.width)}px`;
+        coverVideo.style.height = `${Math.min(window.innerHeight * 0.9, canvas.height)}px`;
+        coverVideo.style.objectFit = "contain";
+        }
+    }
+
+    function gameLoop(timestamp) {
+        console.log("gameLoop chiamato");
+        if (!startTime) startTime = timestamp; // Imposta il tempo di inizio
+
+        update(timestamp);
+        draw();
+
+        // Continua il loop del gioco anche dopo il punteggio 50
+        requestAnimationFrame(gameLoop);
+    }
+
+    // =============================================
+    // 7. INIZIALIZZAZIONE FINALE
+    // =============================================
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+    loadAudioBuffers();
+    // Configurazioni specifiche per piattaforma
+    if (!isMobileDevice()) {
+        dino.width = scaleValue(180, true, true);
+        dino.height = scaleValue(180, false, true);
+    }
 
     // Funzione per ottenere l'offset verticale degli ostacoli su mobile
     function getMobileObstacleOffset() {
-        return isMobileDevice() ? scaleValue(- 50, false) : 0; // Aggiungi un offset di 50 pixel su mobile
+        return isMobileDevice() ? scaleValue(30, false) : 0;
     }
+
+    granchio.y = canvas.height - granchio.height - scaleValue(50, false) - getMobileObstacleOffset();
+    castello.y = canvas.height - castello.height - scaleValue(50, false) - getMobileObstacleOffset();
 
     // Stato del pop-up
     let popupState = 0; // 0: TEST 1, 1: TEST 2, 2: TEST 3, 3: Gioco inizia
@@ -88,13 +247,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Funzione per disegnare il testo in stile pixel art
     function drawPixelText(ctx, text, x, y, type) {
-        ctx.font = type === "title" ? "20px 'Press Start 2P'" : 
-                   type === "subtitle" ? "16px 'Press Start 2P'" : 
-                   "12px 'Press Start 2P'";
-        ctx.fillStyle = "white"; // Testo bianco per contrastare con lo sfondo nero
-        ctx.textAlign = "center"; // Allinea il testo al centro
-        ctx.fillText(text, x, y);
-        console.log(`Disegnato testo: ${text} a (${x}, ${y})`); // Debug
+        const mobileScale = isMobileDevice() ? 0.6 : 1;
+        const fontSize = isMobileDevice() ? 
+            (type === "title" ? 16 : type === "subtitle" ? 14 : 10) : 
+            (type === "title" ? 20 : type === "subtitle" ? 16 : 12);
+        
+        ctx.font = `${fontSize}px 'Press Start 2P'`;
+        ctx.fillStyle = "white";
+        ctx.textAlign = "center";
+        
+        const finalX = isMobileDevice() ? scaleValue(80) : x;
+        const finalY = isMobileDevice() ? scaleValue(40, false) : y;
+        
+        ctx.fillText(text, finalX, finalY);
     }
 
     // Variabile per controllare se il video "cover" è stato riprodotto
@@ -139,6 +304,16 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    // Avvia la riproduzione di mare.mp3 all'apertura del pop-up
+        function startMareAudio() {
+        if (!mareAudio && mareBuffer) {
+            mareAudio = playAudioBuffer(mareBuffer, 0.5, true); // Volume iniziale al 75%, loop attivato
+            console.log("Mare audio started"); // Debug
+        } else {
+            console.log("Mare audio not started: mareBuffer is", mareBuffer); // Debug
+        }
+    }
+
     // Funzione per chiudere la finestra di istruzioni e avviare il gioco
     function startGame() {
         console.log("Gioco avviato"); // Debug
@@ -157,9 +332,6 @@ document.addEventListener("DOMContentLoaded", () => {
     //const referenceHeight = 400;
 
     // AudioContext per sincronizzare gli audio
-    let audioContext;
-    let mareBuffer, gtrsBuffer, keysBuffer, bassBuffer, drumBuffer;
-    let mareAudio, gtrsAudio, keysAudio, bassAudio, drumAudio;
     let audioBuffersLoaded = false;
 
     // Funzione per caricare un file audio come buffer
@@ -192,16 +364,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return { source, gainNode };
     }
 
-    // Avvia la riproduzione di mare.mp3 all'apertura del pop-up
-    function startMareAudio() {
-        if (!mareAudio && mareBuffer) {
-            mareAudio = playAudioBuffer(mareBuffer, 0.5, true); // Volume iniziale al 75%, loop attivato
-            console.log("Mare audio started"); // Debug
-        } else {
-            console.log("Mare audio not started: mareBuffer is", mareBuffer); // Debug
-        }
-    }
-
     // Funzione per avviare gli audio aggiuntivi
     function startAdditionalAudio() {
         if (!gtrsAudio && gtrsBuffer) {
@@ -222,29 +384,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Carica i buffer audio all'avvio
-    function loadAudioBuffers() {
-        Promise.all([
-            loadAudioBuffer("assets/mare.mp3"),
-            loadAudioBuffer("assets/gtrs.mp3"),
-            loadAudioBuffer("assets/keys.mp3"),
-            loadAudioBuffer("assets/bass.mp3"),
-            loadAudioBuffer("assets/drum.mp3"),
-        ]).then(([mare, gtrs, keys, bass, drum]) => {
-            mareBuffer = mare;
-            gtrsBuffer = gtrs;
-            keysBuffer = keys;
-            bassBuffer = bass;
-            drumBuffer = drum;
-            audioBuffersLoaded = true; // Segnala che i buffer sono stati caricati
-            console.log("All audio buffers loaded"); // Debug
-        }).catch((error) => {
-            console.error("Error loading audio buffers:", error);
-        });
-    }
-
     // Inizializza l'audioContext e carica i buffer audio
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
     console.log("AudioContext initialized:", audioContext.state); // Debug
 
     // Funzione per riattivare l'audioContext se sospeso
@@ -259,91 +400,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Aggiungi un listener per riattivare l'audioContext al primo clic
     document.addEventListener("click", resumeAudioContext);
 
-    // Carica i buffer audio
-    loadAudioBuffers();
-
-    // Funzione per ridimensionare il canvas in base al dispositivo
-    function resizeCanvas() {
-        const isMobile = isMobileDevice();
-        const maxWidth = window.innerWidth * (isMobile ? 0.95 : 0.9);
-        const maxHeight = window.innerHeight * (isMobile ? 0.95 : 0.9);
-
-        // Proporzioni originali del canvas (800x400)
-        const aspectRatio = referenceWidth / referenceHeight;
-        let canvasWidth = maxWidth;
-        let canvasHeight = canvasWidth / aspectRatio;
-    
-        if (canvasHeight > maxHeight) {
-            canvasHeight = maxHeight;
-            canvasWidth = canvasHeight * aspectRatio;
-        }
-
-        // Imposta le dimensioni del canvas
-        canvas.width = canvasWidth;
-        canvas.height = canvasHeight;
-        canvas.style.width = `${canvasWidth}px`;
-        canvas.style.height = `${canvasHeight}px`;
-
-        // Reset delle posizioni
-        dino.y = canvas.height * 0.6;
-        dina.y = scaleValue(250, false) - (isMobile ? scaleValue(30, false) : 0);
-
-        // Centra il canvas nello schermo
-        canvas.style.position = "absolute";
-        canvas.style.left = "50%";
-        canvas.style.top = "50%";
-        canvas.style.transform = "translate(-50%, -50%)";
-
-        // Adeguare la posizione del dinosauro
-        //dino.y = canvas.height * 0.6; // Posizione Y del dinosauro (60% dell'altezza del canvas)
-
-        // Ridimensionamento dinamico del video
-        if(coverVideo) {
-        coverVideo.style.width = `${Math.min(window.innerWidth * 0.9, canvas.width)}px`;
-        coverVideo.style.height = `${Math.min(window.innerHeight * 0.9, canvas.height)}px`;
-        coverVideo.style.objectFit = "contain";
-        }
-    }
-
-    // Ridimensiona il canvas all'avvio
-    resizeCanvas();
-
-    // Ridimensiona il canvas quando la finestra viene ridimensionata (utile per il cambio orientamento su mobile)
-    window.addEventListener("resize", () => {
-        resizeCanvas();
-    });
-
-    // Caricamento immagini
-    const dinoImg = new Image();
-    dinoImg.src = "assets/dino.png";
-
-    const dinaImg = new Image();
-    dinaImg.src = "assets/dina.png";
-
-    const gtr1Img = new Image(); // Immagine della chitarra gtr1
-    gtr1Img.src = "assets/gtr1.png";
-
-    const gtr3Img = new Image(); // Immagine della chitarra gtr3
-    gtr3Img.src = "assets/gtr3.png";
-
-    const palmImg = new Image();
-    palmImg.src = "assets/palm.png";
-
-    const umbrellaImg = new Image();
-    umbrellaImg.src = "assets/ombrellone.png";
-
-    const granchioImg = new Image();
-    granchioImg.src = "assets/granchio.png";
-
-    const castelloImg = new Image();
-    castelloImg.src = "assets/castello.png";
-
-    const sfondoImg = new Image();
-    sfondoImg.src = "assets/sfondo.png";
-
     // Verifica caricamento immagini
     let imagesLoaded = 0;
-    const totalImages = 9; // Rimuovi 1 perché cover.png non viene più caricata
 
     function checkAllImagesLoaded() {
         imagesLoaded++;
@@ -354,56 +412,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
     dinoImg.onload = checkAllImagesLoaded;
     dinoImg.onerror = () => console.error("Errore nel caricamento di dino.png");
-
     dinaImg.onload = checkAllImagesLoaded;
     dinaImg.onerror = () => console.error("Errore nel caricamento di dina.png");
-
     gtr1Img.onload = checkAllImagesLoaded;
     gtr1Img.onerror = () => console.error("Errore nel caricamento di gtr1.png");
-
     gtr3Img.onload = checkAllImagesLoaded;
     gtr3Img.onerror = () => console.error("Errore nel caricamento di gtr3.png");
-
     palmImg.onload = checkAllImagesLoaded;
     palmImg.onerror = () => console.error("Errore nel caricamento di palm.png");
-
     umbrellaImg.onload = checkAllImagesLoaded;
     umbrellaImg.onerror = () => console.error("Errore nel caricamento di ombrellone.png");
-
     granchioImg.onload = checkAllImagesLoaded;
     granchioImg.onerror = () => console.error("Errore nel caricamento di granchio.png");
-
     castelloImg.onload = checkAllImagesLoaded;
     castelloImg.onerror = () => console.error("Errore nel caricamento di castello.png");
-
     sfondoImg.onload = checkAllImagesLoaded;
     sfondoImg.onerror = () => console.error("Errore nel caricamento di sfondo.png");
 
     // Variabili di gioco
-    let gtr3 = {
-        x: canvas.width + scaleValue(200), // Inizia fuori dallo schermo a destra, più lontano di Dina
-        y: scaleValue(230, false), //- (isMobileDevice() ? scaleValue(50, false) : 0), // Aggiusta la posizione Y su mobile
-        width: scaleValue(150), // Larghezza aumentata ulteriormente
-        height: scaleValue(150, false), // Altezza aumentata ulteriormente
-        visible: false, // Inizialmente invisibile
-        targetX: canvas.width - scaleValue(300), // Posizione finale a destra, più a sinistra di Dina
-        isMoving: false // Controlla se gtr3 si sta muovendo
-    };
-    let palms = [];
-    let granchio = { 
-        x: canvas.width, 
-        y: scaleValue(250, false) + getMobileObstacleOffset(), // Aggiusta la posizione Y su mobile
-        width: scaleValue(70), 
-        height: scaleValue(70, false), 
-        visible: false 
-    }; // Granchio inizialmente invisibile
-    let castello = { 
-        x: canvas.width, 
-        y: canvas.height - scaleValue(80, false) + getMobileObstacleOffset(), // Aggiusta la posizione Y su mobile
-        width: scaleValue(50), 
-        height: scaleValue(50, false), 
-        visible: false 
-    }; // Castello più in basso
     let scrollSpeed = isMobileDevice() ? 3 : 5; // Velocità iniziale ridotta per mobile
     let score = 0;
     let lastObstacleTime = 0;
@@ -420,10 +446,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const maskPauseDuration = 2000; // Durata della pausa (2 secondi)
     const maskDuration = 5000; // Durata totale della maschera (5 secondi)
 
-    // Offset verticale per l'ombrellone e le palme
-    const umbrellaYOffset = -20; // Alza gli ombrelloni (valore negativo per spostarli verso l'alto)
-    const palmYOffset = 10; // Abbassa le palme (valore positivo per spostarle verso il basso)
-
     // Dimensioni delle immagini modificate
     const palmWidth = scaleValue(144 * 1.2 * 0.9); // Aumenta del 20% e poi rimpicciolisce del 10%
     const palmHeight = scaleValue(144 * 1.2 * 0.9, false); // Aumenta del 20% e poi rimpicciolisce del 10%
@@ -435,7 +457,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Probabilità di generare coppie di ostacoli
     let pairProbability = 0.1; // Inizia con 10% di probabilità
-    const maxPairProbability = 0.5; // Massima probabilità (50%)
 
     // Distanza orizzontale tra gli ostacoli in una coppia
     const obstacleSpacing = scaleValue(100); // Distanza di 100 pixel tra i due ostacoli
@@ -552,16 +573,6 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
-        // 2. Disegna il granchio (se visibile)
-        if (granchio.visible) {
-            drawImage(ctx, granchioImg, granchio.x, granchio.y, granchio.width, granchio.height);
-        }
-
-        // 3. Disegna il castello (se visibile)
-        if (castello.visible) {
-            drawImage(ctx, castelloImg, castello.x, castello.y, castello.width, castello.height);
-        }
-
         // 4. Disegna gli ostacoli (palme e ombrelloni)
         palms.forEach((obstacle) => {
             if (obstacle.type === "palm") {
@@ -571,6 +582,16 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
+        // 2. Disegna il granchio (se visibile)
+        if (granchio.visible) {
+            drawImage(ctx, granchioImg, granchio.x, granchio.y, granchio.width, granchio.height);
+        }
+
+        // 3. Disegna il castello (se visibile)
+        if (castello.visible) {
+            drawImage(ctx, castelloImg, castello.x, castello.y, castello.width, castello.height);
+        }
+        
         // 5. Disegna il dinosauro
         drawImage(ctx, dinoImg, dino.x, dino.y, dino.width, dino.height);
 
@@ -579,8 +600,8 @@ document.addEventListener("DOMContentLoaded", () => {
             drawImage(ctx, dinaImg, dina.x, dina.y, dina.width, dina.height);
 
             // Disegna la chitarra gtr1 sopra Dina
-            const gtr1X = dina.x + scaleValue(10); //scaleValue(isMobileDevice() ? 20 : 10); // Spostata leggermente a sinistra
-            const gtr1Y = dina.y + scaleValue(10, false); //scaleValue(isMobileDevice() ? 20 : 10, false); // Spostata leggermente verso il basso
+            const gtr1X = dina.x + (isMobileDevice() ? scaleValue(15) : scaleValue(10));
+            const gtr1Y = dina.y + (isMobileDevice() ? scaleValue(15, false) : scaleValue(10, false)); // Spostata leggermente verso il basso
             const gtr1Width = scaleValue(80); // Larghezza della chitarra
             const gtr1Height = scaleValue(80, false); // Altezza della chitarra
             drawImage(ctx, gtr1Img, gtr1X, gtr1Y, gtr1Width, gtr1Height);
@@ -640,18 +661,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         audio.gainNode.gain.setValueAtTime(startVolume, startTime);
         audio.gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
-    }
-
-    // Loop del gioco
-    function gameLoop(timestamp) {
-        console.log("gameLoop chiamato");
-        if (!startTime) startTime = timestamp; // Imposta il tempo di inizio
-
-        update(timestamp);
-        draw();
-
-        // Continua il loop del gioco anche dopo il punteggio 50
-        requestAnimationFrame(gameLoop);
     }
 
     // Aggiorna lo stato del gioco
