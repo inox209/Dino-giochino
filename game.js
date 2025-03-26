@@ -64,13 +64,19 @@ document.addEventListener("DOMContentLoaded", () => {
                window.innerWidth <= mobileBreakpoint;
     }
 
-    function scaleValue(value, isWidth = true, isDino = false) {
+    function scaleValue(value, isWidth = true, isDino = false, isObstacle = false) {
         const scaleFactor = isWidth ? canvas.width / referenceWidth : canvas.height / referenceHeight;
+        
         if (isMobileDevice()) {
-            if (isDino) return value * scaleFactor * 0.8;
-            return value * scaleFactor * 1;
+            // Regole per MOBILE
+            if (isDino) return value * scaleFactor * 0.8;   // Dino 20% più piccolo
+            if (isObstacle) return value * scaleFactor * 0.7; // Ostacoli 30% più piccoli
+            return value * scaleFactor;                     // Altri elementi normali
+        } else {
+            // Regole per DESKTOP
+            if (isDino) return value * scaleFactor * 0.6;   // Dino 20% più grande
+            return value * scaleFactor;                     // Altri elementi normali
         }
-        return value * scaleFactor * (isDino ? 0.6 : 1);
     }
 
     function getMobileObstacleOffset() {
