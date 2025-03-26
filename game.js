@@ -124,7 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
         width: scaleValue(150, true, true),
         height: scaleValue(150, false, true),
         isJumping: false,
-        jumpSpeed: isMobileDevice() ? -10 : -15,
+        jumpSpeed: isMobileDevice() ? -8 : -15,
         gravity: isMobileDevice() ? 0.6 : 0.35
     };
 
