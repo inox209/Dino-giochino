@@ -94,18 +94,20 @@ document.addEventListener("DOMContentLoaded", () => {
                window.innerWidth <= mobileBreakpoint;
     }
 
-    function scaleValue(value, isWidth = true, isDino = false, isObstacle = false) {
+    function scaleValue(value, isWidth = true, options = {}) {
         const scaleFactor = isWidth ? canvas.width / referenceWidth : canvas.height / referenceHeight;
-        
+        const { isDino = false, isObstacle = false } = options;
+    
         if (isMobileDevice()) {
-            // Regole per MOBILE
-            if (isDino) return value * scaleFactor * 0.8;   // Dino 20% più piccolo
-            if (isObstacle) return value * scaleFactor * 0.5; // Ostacoli 30% più piccoli
-            return value * scaleFactor;                     // Altri elementi normali
+            // Regole MOBILE
+            if (isDino) return value * scaleFactor * 0.8;    // Dino: 20% più piccolo
+            if (isObstacle) return value * scaleFactor * 0.5; // Ostacoli: 50% più piccoli
+            return value * scaleFactor;                      // Altri elementi: normale
         } else {
-            // Regole per DESKTOP
-            if (isDino) return value * scaleFactor * 0.6;   // Dino 20% più grande
-            return value * scaleFactor;                     // Altri elementi normali
+            // Regole DESKTOP (corretto il bug del dinosauro più piccolo)
+            if (isDino) return value * scaleFactor * 1.2;    // Dino: 20% più grande
+            if (isObstacle) return value * scaleFactor * 0.8; // Ostacoli: 20% più piccoli (opzionale)
+            return value * scaleFactor;                      // Altri elementi: normale
         }
     }
 
@@ -122,8 +124,8 @@ document.addEventListener("DOMContentLoaded", () => {
         width: scaleValue(150, true, true),
         height: scaleValue(150, false, true),
         isJumping: false,
-        jumpSpeed: isMobileDevice() ? -12 : -15,
-        gravity: isMobileDevice() ? 0.5 : 0.35
+        jumpSpeed: isMobileDevice() ? -10 : -15,
+        gravity: isMobileDevice() ? 0.6 : 0.35
     };
 
     let dina = {
@@ -150,16 +152,16 @@ document.addEventListener("DOMContentLoaded", () => {
     let granchio = { 
         x: canvas.width, 
         y: canvas.height - getMobileObstacleOffset(),
-        width: scaleValue(200), 
-        height: scaleValue(200, false), 
-        visible: false 
+        width: scaleValue(200, true, { isObstacle: true }), 
+        height: scaleValue(200, false, { isObstacle: true }),
+        visible: false
     };
 
     let castello = { 
         x: canvas.width, 
         y: canvas.height - getMobileObstacleOffset(),
-        width: scaleValue(150), 
-        height: scaleValue(150, false), 
+        width: scaleValue(150, true, { isObstacle: true }),
+        height: scaleValue(150, false, { isObstacle: true }),
         visible: false 
     };
 
