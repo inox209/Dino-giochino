@@ -9,6 +9,36 @@ document.addEventListener("DOMContentLoaded", () => {
     const umbrellaYOffset = -20;
     const palmYOffset = 25;
     const maxPairProbability = 0.5;
+    const OFFSET_CONFIG = {
+    PALM: { 
+        yOffset: 10, 
+        mobileYOffset: 5 
+    },
+    UMBRELLA: { 
+        yOffset: -20, 
+        mobileYOffset: -10 
+    },
+    GRANCHIO: { 
+        yOffset: 0, 
+        mobileYOffset: 15 
+    },
+    CASTELLO: { 
+        yOffset: 0, 
+        mobileYOffset: 10 
+    }
+    };
+    function getVerticalOffset(elementKey) {
+        const config = OFFSET_CONFIG[elementKey];
+        if (!config) return 0;
+        
+        const baseOffset = scaleValue(config.yOffset, false);
+        
+        if (isMobileDevice()) {
+            return baseOffset + scaleValue(config.mobileYOffset, false);
+        }
+        
+        return baseOffset;
+    }
 
     // =============================================
     // 2. INIZIALIZZAZIONE ELEMENTI DOM
@@ -253,19 +283,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Funzione per disegnare il testo in stile pixel art
     function drawPixelText(ctx, text, x, y, type) {
-        const mobileScale = isMobileDevice() ? 0.6 : 1;
-        const fontSize = isMobileDevice() ? 
-            (type === "title" ? 16 : type === "subtitle" ? 14 : 10) : 
-            (type === "title" ? 20 : type === "subtitle" ? 16 : 12);
+        // 1. Configurazione dimensioni responsive
+        const sizeConfig = {
+            title: {
+                desktop: 20,
+                mobile: 14, // Ridotto da 16 a 14 (-12.5%)
+                scale: 1.0
+            },
+            subtitle: {
+                desktop: 16,
+                mobile: 12, // Ridotto da 14 a 12 (-14%)
+                scale: 0.9
+            },
+            default: {
+                desktop: 12,
+                mobile: 10,
+                scale: 0.8
+            }
+        };
+    
+        // 2. Seleziona configurazione in base al tipo
+        const config = sizeConfig[type] || sizeConfig.default;
         
+        // 3. Imposta valori in base al dispositivo
+        const fontSize = isMobileDevice() ? config.mobile : config.desktop;
+        const scale = isMobileDevice() ? config.scale : 1;
+        const posX = isMobileDevice() ? scaleValue(60) : x; // Spostato più a destra (da 80 a 60)
+        const posY = isMobileDevice() ? scaleValue(35, false) : y; // Leggermente più in alto (da 40 a 35)
+    
+        // 4. Applica le impostazioni
+        ctx.save(); // Salva lo stato corrente del contesto
         ctx.font = `${fontSize}px 'Press Start 2P'`;
         ctx.fillStyle = "white";
-        ctx.textAlign = "center";
+        ctx.textAlign = isMobileDevice() ? "left" : "center"; // Allineamento diverso su mobile
+        ctx.scale(scale, scale); // Applica lo scaling
         
-        const finalX = isMobileDevice() ? scaleValue(80) : x;
-        const finalY = isMobileDevice() ? scaleValue(40, false) : y;
-        
-        ctx.fillText(text, finalX, finalY);
+        // 5. Disegna il testo (aggiustando la posizione per lo scaling)
+        ctx.fillText(text, posX / scale, posY / scale);
+        ctx.restore(); // Ripristina lo stato del contesto
     }
 
     // Variabile per controllare se il video "cover" è stato riprodotto
@@ -482,11 +537,34 @@ document.addEventListener("DOMContentLoaded", () => {
     function createNewPalm() {
         const obstacleTypes = ["palm", "umbrella"];
         const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
-        const x = canvas.width;
-        const y = type === "umbrella" 
-            ? canvas.height - umbrellaHeight - scaleValue(50, false) + umbrellaYOffset + 20 + getMobileObstacleOffset() // Abbassa ombrelloni di 20 pixel
-            : canvas.height - palmHeight - scaleValue(50, false) + palmYOffset + getMobileObstacleOffset(); // Ripristina palme alla posizione originale
-        return { type, x, y, passed: false, hit: false };
+        const x = canvas.width;       
+        // Calcolo base per la posizione Y
+        const baseY = canvas.height - scaleValue(50, false);       
+        // Configurazione per tipo di ostacolo
+        const obstacleConfig = {
+            palm: {
+                height: palmHeight,
+                offsetKey: "PALM" // Corrisponde alla chiave in OFFSET_CONFIG
+            },
+            umbrella: {
+                height: umbrellaHeight,
+                offsetKey: "UMBRELLA",
+                extraOffset: 20 // Valore extra specifico per ombrelloni
+            }
+        };
+    
+        const config = obstacleConfig[type];
+        // Calcolo posizione Y finale
+        const y = baseY - config.height + 
+                  getVerticalOffset(config.offsetKey) + 
+                  (config.extraOffset || 0);
+        return { 
+            type, 
+            x, 
+            y, 
+            passed: false, 
+            hit: false 
+        };
     }
 
     function createPairOfObstacles() {
