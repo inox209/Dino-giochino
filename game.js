@@ -6,8 +6,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const referenceHeight = 400;
     const mobileBreakpoint = 768;
     const totalImages = 9;
-    const umbrellaYOffset = -20;
-    const palmYOffset = 15;
+    const umbrellaYOffset = -30;
+    const palmYOffset = 25;
     const maxPairProbability = 0.5;
 
     // =============================================
@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const scaleFactor = isWidth ? canvas.width / referenceWidth : canvas.height / referenceHeight;
         if (isMobileDevice()) {
             if (isDino) return value * scaleFactor * 0.8;
-            return value * scaleFactor * 1.1;
+            return value * scaleFactor * 1;
         }
         return value * scaleFactor * (isDino ? 0.6 : 1);
     }
@@ -113,17 +113,17 @@ document.addEventListener("DOMContentLoaded", () => {
     let palms = [];
     let granchio = { 
         x: canvas.width, 
-        y: canvas.height - scaleValue(70, false) - scaleValue(50, false) - getMobileObstacleOffset(),
-        width: scaleValue(70 * 2), 
-        height: scaleValue(70 * 2, false), 
+        y: canvas.height - getMobileObstacleOffset(),
+        width: scaleValue(200), 
+        height: scaleValue(200, false), 
         visible: false 
     };
 
     let castello = { 
         x: canvas.width, 
-        y: canvas.height - scaleValue(50, false) - scaleValue(50, false) - getMobileObstacleOffset(),
-        width: scaleValue(50 * 2.4), 
-        height: scaleValue(50 * 2.4, false), 
+        y: canvas.height - getMobileObstacleOffset(),
+        width: scaleValue(150), 
+        height: scaleValue(150, false), 
         visible: false 
     };
 
