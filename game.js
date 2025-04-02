@@ -95,20 +95,29 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function scaleValue(value, isWidth = true, options = {}) {
-        const scaleFactor = isWidth ? canvas.width / referenceWidth : canvas.height / referenceHeight;
-        const { isDino = false, isObstacle = false } = options;
-    
-        if (isMobileDevice()) {
-            // Regole MOBILE
-            if (isDino) return value * scaleFactor * 0.8;    // Dino: 20% più piccolo
-            if (isObstacle) return value * scaleFactor * 0.5; // Ostacoli: 50% più piccoli
-            return value * scaleFactor;                      // Altri elementi: normale
-        } else {
-            // Regole DESKTOP (corretto il bug del dinosauro più piccolo)
-            if (isDino) return value * scaleFactor * 1.2;    // Dino: 20% più grande
-            if (isObstacle) return value * scaleFactor * 0.8; // Ostacoli: 20% più piccoli (opzionale)
-            return value * scaleFactor;                      // Altri elementi: normale
-        }
+    const { isDino = false, isObstacle = false } = options;
+    const scaleFactor = isWidth ? canvas.width / referenceWidth : canvas.height / referenceHeight;
+
+    // Regole MOBILE
+    if (isMobileDevice()) {
+        if (isDino) return value * scaleFactor * 0.8;    // Dino: 20% più piccolo
+        if (isObstacle) return value * scaleFactor * 0.6; // Ostacoli: 40% più piccoli
+        return value * scaleFactor;
+    }
+    // Regole DESKTOP
+    else {
+        if (isDino) return value * scaleFactor * 0.2;          // Dino: dimensione normale
+        if (isObstacle) return value * scaleFactor * 0.3; // Ostacoli: 30% più piccoli
+        return value * scaleFactor;
+    }
+}
+
+    function refreshAllSizes() {
+        // Ricalcola le dimensioni del dinosauro
+        dino.width = scaleValue(150, true, { isDino: true });
+        dino.height = scaleValue(150, false, { isDino: true });
+        granchio.width = scaleValue(200, true, { isObstacle: true });
+        granchio.height = scaleValue(200, false, { isObstacle: true });
     }
 
     function getMobileObstacleOffset() {
@@ -121,11 +130,12 @@ document.addEventListener("DOMContentLoaded", () => {
     let dino = {
         x: scaleValue(100),
         y: scaleValue(250, false),
-        width: scaleValue(150, true, true),
-        height: scaleValue(150, false, true),
+        width: scaleValue(150, true, { isDino: true }),
+        height: scaleValue(150, false, { isDino: true }),
         isJumping: false,
         jumpSpeed: isMobileDevice() ? -8 : -15,
-        gravity: isMobileDevice() ? 0.6 : 0.35
+        gravity: isMobileDevice() ? 0.6 : 0.35,
+        maxJumpHeight: isMobileDevice() ? 140 : Infinity
     };
 
     let dina = {
@@ -160,8 +170,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let castello = { 
         x: canvas.width, 
         y: canvas.height - getMobileObstacleOffset(),
-        width: scaleValue(150, true, { isObstacle: true }),
-        height: scaleValue(150, false, { isObstacle: true }),
+        width: scaleValue(450, true, { isObstacle: true }),
+        height: scaleValue(450, false, { isObstacle: true }),
         visible: false 
     };
 
@@ -238,6 +248,7 @@ document.addEventListener("DOMContentLoaded", () => {
         coverVideo.style.height = `${Math.min(window.innerHeight * 0.9, canvas.height)}px`;
         coverVideo.style.objectFit = "contain";
         }
+        refreshAllSizes(); // <-- Aggiungi questa linea
     }
 
     function gameLoop(timestamp) {
@@ -268,8 +279,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return isMobileDevice() ? scaleValue(30, false) : 0;
     }
 
-    granchio.y = canvas.height - granchio.height - scaleValue(50, false) - getMobileObstacleOffset();
-    castello.y = canvas.height - castello.height - scaleValue(50, false) - getMobileObstacleOffset();
+    //granchio.y = canvas.height - granchio.height - scaleValue(50, false) - getMobileObstacleOffset();
+    //castello.y = canvas.height - castello.height - scaleValue(50, false) - getMobileObstacleOffset();
 
     // Stato del pop-up
     let popupState = 0; // 0: TEST 1, 1: TEST 2, 2: TEST 3, 3: Gioco inizia
@@ -845,7 +856,17 @@ document.addEventListener("DOMContentLoaded", () => {
         if (dino.isJumping) {
             dino.y += dino.jumpSpeed;
             dino.jumpSpeed += dino.gravity;
-
+            
+            // Doppio controllo (fisica + limite fisso)
+            if (isMobileDevice()) {
+                const currentHeight = scaleValue(250, false) - dino.y;
+                if (currentHeight > dino.maxJumpHeight) {
+                    dino.y = scaleValue(250, false) - dino.maxJumpHeight;
+                    dino.jumpSpeed = 0;
+                }
+            }
+            
+            // Atterraggio
             if (dino.y >= scaleValue(250, false)) {
                 dino.y = scaleValue(250, false);
                 dino.isJumping = false;
