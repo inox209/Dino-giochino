@@ -170,8 +170,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let castello = { 
         x: canvas.width, 
         y: canvas.height - getMobileObstacleOffset(),
-        width: scaleValue(450, true, { isObstacle: true }),
-        height: scaleValue(450, false, { isObstacle: true }),
+        width: scaleValue(150, true, { isObstacle: true }),
+        height: scaleValue(150, false, { isObstacle: true }),
         visible: false 
     };
 
