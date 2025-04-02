@@ -11,8 +11,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const maxPairProbability = 0.5;
     const OFFSET_CONFIG = {
     PALM: { 
-        yOffset: -10, 
-        mobileYOffset: -5 
+        yOffset: 10, 
+        mobileYOffset: 5 
     },
     UMBRELLA: { 
         yOffset: -20, 
@@ -134,7 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
         height: scaleValue(150, false, { isDino: true }),
         isJumping: false,
         jumpSpeed: isMobileDevice() ? -8 : -15,
-        gravity: isMobileDevice() ? 0.8 : 0.35,
+        gravity: isMobileDevice() ? 0.6 : 0.65,
         maxJumpHeight: isMobileDevice() ? 140 : Infinity
     };
 
