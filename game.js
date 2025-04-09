@@ -114,10 +114,18 @@ document.addEventListener("DOMContentLoaded", () => {
             video.src = "assets/cover.mp4";
             video.loop = false;
             video.muted = true;
-            video.style.position = "absolute";
+            video.setAttribute('playsinline', ''); // Essenziale per iOS
+            video.setAttribute('webkit-playsinline', ''); // Per vecchi browser iOS
+            video.style.position = "fixed";
+            video.style.top = "50%";
+            video.style.left = "50%";
+            video.style.transform = "translate(-50%, -50%)";
+            video.style.maxWidth = "100%";
+            video.style.maxHeight = "100%";
             video.style.display = "none";
             video.style.opacity = "0";
             video.style.transition = "opacity 2s";
+            video.style.zIndex = "999";
             document.body.appendChild(video);
             return video;
         })(),
@@ -166,11 +174,11 @@ document.addEventListener("DOMContentLoaded", () => {
         dino: {
             x: scaleValue(100),
             y: scaleValue(250, false),
-            width: scaleValue(isMobileDevice() ? 150 : 120, true, { isDino: true }),
-            height: scaleValue(isMobileDevice() ? 150 : 120, false, { isDino: true }),
+            width: scaleValue(isMobileDevice() ? 150 : 150, true, { isDino: true }),
+            height: scaleValue(isMobileDevice() ? 150 : 150, false, { isDino: true }),
             isJumping: false,
             jumpSpeed: isMobileDevice() ? -13 : -18,
-            gravity: isMobileDevice() ? 0.8 : 0.6,
+            gravity: isMobileDevice() ? 0.8 : 0.55,
             maxJumpHeight: isMobileDevice() ? 160 : 250,
             startX: scaleValue(100),
             finalTargetX: elements.canvas.width/2 - scaleValue(150),
@@ -203,16 +211,16 @@ document.addEventListener("DOMContentLoaded", () => {
         granchio: { 
             x: elements.canvas.width, 
             y: elements.canvas.height - getMobileObstacleOffset(),
-            width: scaleValue(200, true, { isObstacle: true }), 
-            height: scaleValue(200, false, { isObstacle: true }),
+            width: scaleValue(isMobileDevice() ? 200 : 200, true, { isgranchio: true }),
+            height: scaleValue(isMobileDevice() ? 200 : 200, true, { isgranchio: true }),
             visible: false
         },
         
         castello: { 
             x: elements.canvas.width, 
             y: elements.canvas.height - getMobileObstacleOffset(),
-            width: scaleValue(450, true, { isObstacle: true }),
-            height: scaleValue(450, false, { isObstacle: true }),
+            width: scaleValue(isMobileDevice() ? 150 : 150, true, { isobstacle: true }),
+            height: scaleValue(isMobileDevice() ? 150 : 150, true, { isobstacle: true }),
             visible: false 
         }
     };
@@ -742,7 +750,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function drawPixelText(ctx, text, x, y, type, options = {}) {
         const textStyle = getResponsiveTextSizes(type);
-        
         ctx.save();
         ctx.font = `bold ${textStyle.size}px 'Press Start 2P', monospace`;
         ctx.fillStyle = options.color || "white";
@@ -1042,7 +1049,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Messaggi iniziali
         if(state.gamePaused && state.popupState < messages.length) {
             const currentMsg = messages[state.popupState];
-            const textStyle = getResponsiveTextSizes(currentMsg.type || 'default');
+            const textStyle = getResponsiveTextSizes(currentMsg.type || 'title');
             
             elements.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
             elements.ctx.fillRect(0, 0, elements.canvas.width, elements.canvas.height);
@@ -1073,27 +1080,41 @@ document.addEventListener("DOMContentLoaded", () => {
         // Fine gioco
         if (state.maskProgress >= 1 && !state.coverVideoPlayed) {
             console.log("Maschera completamente chiusa - Nascondi la scritta e il tasto 'Salta'");
-    
-            const desktopMessage = document.getElementById("desktopMessage");
-            if (desktopMessage) desktopMessage.style.display = "none";            
-            if (elements.jumpButton) elements.jumpButton.style.display = "none";
-    
             state.coverVideoPlayed = true;
+    
+            // Imposta le dimensioni per mobile
+            if (isMobileDevice()) {
+                elements.coverVideo.style.width = "auto";
+                elements.coverVideo.style.height = "80vh";
+                elements.coverVideo.style.maxWidth = "100%";
+            } else {
+                elements.coverVideo.style.width = `${Math.min(window.innerWidth * 0.9, elements.canvas.width)}px`;
+                elements.coverVideo.style.height = "auto";
+            }
+        
             elements.coverVideo.style.display = "block";
             elements.coverVideo.style.opacity = "0";
+            
+            // Forza il caricamento su mobile
             elements.coverVideo.load();
+            
             setTimeout(() => {
                 elements.coverVideo.style.opacity = "1";
+                
+                // Gestione speciale per la riproduzione su mobile
                 const playPromise = elements.coverVideo.play();
+                
                 if (playPromise !== undefined) {
                     playPromise.catch(error => {
                         console.log("Errore riproduzione video:", error);
-                        // Fallback: mostra comunque il messaggio se il video non può essere riprodotto
-                        elements.prizeMessage.container.style.display = "flex";
+                        // Soluzione alternativa per iOS
+                        elements.coverVideo.muted = true;
+                        elements.coverVideo.play().catch(e => console.log("Errore anche con muted:", e));
                     });
                 }
             }, 100);
- 
+        
+            // Mostra il messaggio dopo 1 secondo
             setTimeout(() => {
                 elements.prizeMessage.container.style.display = "flex";
             }, 1000);
@@ -1318,7 +1339,28 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             break;
     }
-}
+    }
+
+    function setupVideoForMobile() {
+        if (!isMobileDevice()) return;
+        
+        // Gestione speciale per iOS
+        document.body.addEventListener('click', function videoPlayHandler() {
+            if (state.coverVideoPlayed && elements.coverVideo.style.display === "block") {
+                elements.coverVideo.muted = false; // Riattiva l'audio se necessario
+                elements.coverVideo.play().catch(e => console.log("Errore play:", e));
+            }
+            document.body.removeEventListener('click', videoPlayHandler);
+        }, { once: true });
+        
+        // Ridimensionamento dinamico per mobile
+        window.addEventListener('resize', function() {
+            if (state.coverVideoPlayed) {
+                elements.coverVideo.style.height = "80vh";
+                elements.coverVideo.style.maxWidth = "100%";
+            }
+        });
+    }
 
     // =============================================
     // 9. INIZIALIZZAZIONE
@@ -1384,6 +1426,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 elements.coverVideo.dispatchEvent(new Event('loadedmetadata'));
             }, 500);
         }
+        setupVideoForMobile();
     }
 
     // Avvia il gioco
