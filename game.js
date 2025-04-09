@@ -152,15 +152,16 @@ document.addEventListener("DOMContentLoaded", () => {
         
         dina: {
             startX: elements.canvas.width + scaleValue(200), // Inizio FUORI dallo schermo
-            entryTargetX: elements.canvas.width - scaleValue(200), // Prima fermata (visibile)
-            finalTargetX: elements.canvas.width/2 + scaleValue(50), // Centro + offset
+            entryTargetX: elements.canvas.width - scaleValue(300), // Prima fermata (visibile)
+            finalTargetX: elements.canvas.width/2 + scaleValue(100), // Centro + offset
             width: scaleValue(isMobileDevice() ? 150 : 320, true, { isDina: true }),
             height: scaleValue(isMobileDevice() ? 150 : 320, false, { isDina: true }),
             entrySpeed: 2,
             moveSpeed: 2,
-            x: 0, // Verrà impostato in init()
-            y: isMobileDevice() ? scaleValue(200, false) : scaleValue(200, false),
-            visible: false
+            x: elements.canvas.width + scaleValue(200),
+            y: isMobileDevice() ? scaleValue(200, false) : scaleValue(250, false),
+            visible: false,
+            state: "hidden"
         },
 
         gtr1: {
@@ -795,7 +796,7 @@ document.addEventListener("DOMContentLoaded", () => {
                      gameObjects.dina.x + gameObjects.gtr1.offsetX,
                      gameObjects.dina.y + gameObjects.gtr1.offsetY,
                      gameObjects.gtr1.width, gameObjects.gtr1.height);
-        }
+        }    
 
         drawPixelText(ctx, `Punteggio: ${state.score}`, scaleValue(150), scaleValue(30, false), "title");
         if(state.gamePaused && state.popupState < messages.length) {
@@ -824,8 +825,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Se il punteggio è >= 50, avvia la sequenza finale
         if (state.score >= 50 && !state.gameEnded) {
+            state.showDina = true;
             state.gameEnded = true;
-            gameObjects.dina.x = elements.canvas.width + scaleValue(200); // Reset posizione iniziale
+            gameObjects.dina.state = "hidden"; // Resetta lo stato
+            console.log("🎯 Score 50 raggiunto - Attivazione Dina");
             
             document.removeEventListener("keydown", handleJump);
             elements.jumpButton.removeEventListener("click", handleJump);
@@ -992,7 +995,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("🎯 Score 50 raggiunto - Attivazione Dina");
         }
         
-        handleDinaAnimation(timestamp);
+        updateDinaAnimation(timestamp);
     
     }
 
@@ -1004,12 +1007,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if(state.gamePaused && state.popupState < messages.length) {
             elements.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
             elements.ctx.fillRect(0, 0, elements.canvas.width, elements.canvas.height);
-            
-            // Mostra SOLO il messaggio corrente (non quelli precedenti)
             const currentMsg = messages[state.popupState];
             const maxWidth = elements.canvas.width * 0.8; // Lascia un margine del 10% su ogni lato
-            const lineHeight = 30;
+            const lineHeight = isMobileDevice() ? 20 : 30;
             const font = currentMsg.type === "title" ? "bold 24px 'Press Start 2P'" : "18px 'Press Start 2P'";
+            const fontSize = isMobileDevice() ? 14 : 24;
             
             drawWrappedText(
                 elements.ctx,
@@ -1017,7 +1019,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 elements.canvas.width / 2,
                 elements.canvas.height / 2,
                 elements.canvas.width * 0.8, // maxWidth
-                30, // lineHeight (altezza base di ogni riga)
+                lineHeight, //(altezza base di ogni riga)
                 currentMsg.color,
                 {
                     font: currentMsg.type === "title" 
@@ -1087,54 +1089,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
     
-    function handleDinaAnimation(timestamp) {
-        if (!state.showDina) return;
-    
-        // FASE 1: Generazione fuori dallo schermo e ingresso progressivo
-        if (!state.dinaEntryComplete) {
-            gameObjects.dina.visible = true;
-            gameObjects.dina.x = Math.max(gameObjects.dina.entryTargetX, gameObjects.dina.x - gameObjects.dina.entrySpeed);
-            
-            // Verifica se ha completato l'entrata
-            if (gameObjects.dina.x <= gameObjects.dina.entryTargetX) {
-                state.dinaEntryComplete = true;
-                state.dinaPauseStartTime = timestamp;
-                console.log("Dina completamente entrata nello schermo - pausa di 2 secondi");
-            }
-            return;
-        }
-    
-        // FASE 2: Pausa di 2 secondi dopo l'entrata completa
-        if (!state.dinaMovingToCenter && timestamp - state.dinaPauseStartTime < 2000) {
-            return;
-        }
-    
-        // FASE 3: Movimento verso il centro
-        if (!state.dinaMovingToCenter) {
-            state.dinaMovingToCenter = true;
-            console.log("Inizio movimento verso il centro");
-        }
-    
-        // Muovi DINO verso SINISTRA (al centro)
-        if (gameObjects.dino.x < gameObjects.dino.finalTargetX) {
-            gameObjects.dino.x += gameObjects.dino.moveSpeed;
-        }
-    
-        // Muovi DINA verso DESTRA (al centro)
-        if (gameObjects.dina.x > gameObjects.dina.finalTargetX) {
-            gameObjects.dina.x -= gameObjects.dina.moveSpeed;
-        }
-    
-        // Verifica se hanno raggiunto il centro
-        const dinaReady = Math.abs(gameObjects.dina.x - gameObjects.dina.finalTargetX) < 1;
-        const dinoReady = Math.abs(gameObjects.dino.x - gameObjects.dino.finalTargetX) < 1;
-        
-        if (dinaReady && dinoReady && !state.maskStartTime) {
-            state.maskStartTime = timestamp;
-            console.log("Centratura completata - inizio maschera a cuore");
-        }
-    }
-
     function gameLoop(timestamp) {
         // Modifica questa funzione così:
         if (!state.startTime) {
@@ -1209,6 +1163,53 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    function updateDinaAnimation(timestamp) {
+        if (!state.showDina) return;
+    
+        switch (gameObjects.dina.state) {
+            case "hidden":
+                gameObjects.dina.visible = true;
+                gameObjects.dina.state = "entering";
+                gameObjects.dina.x = gameObjects.dina.startX;
+                console.log("Dina: Inizio entrata da destra");
+                break;
+    
+            case "entering":
+                gameObjects.dina.x -= gameObjects.dina.entrySpeed;
+                
+                if (gameObjects.dina.x <= gameObjects.dina.entryTargetX) {
+                    gameObjects.dina.state = "pausing";
+                    gameObjects.dina.pauseStartTime = timestamp;
+                    console.log("Dina: Entrata completata, pausa di 2 secondi");
+                }
+                break;
+    
+            case "pausing":
+                if (timestamp - gameObjects.dina.pauseStartTime >= 2000) {
+                    gameObjects.dina.state = "movingToCenter";
+                    console.log("Dina: Fine pausa, inizio movimento al centro");
+                }
+                break;
+    
+            case "movingToCenter":
+                if (gameObjects.dino.x < gameObjects.dino.finalTargetX) {
+                    gameObjects.dino.x += gameObjects.dino.moveSpeed;
+                }
+    
+                if (gameObjects.dina.x > gameObjects.dina.finalTargetX) {
+                    gameObjects.dina.x -= gameObjects.dina.moveSpeed;
+                }
+    
+                if (Math.abs(gameObjects.dino.x - gameObjects.dino.finalTargetX) < 1 && 
+                    Math.abs(gameObjects.dina.x - gameObjects.dina.finalTargetX) < 1) {
+                    gameObjects.dina.state = "centered";
+                    state.maskStartTime = timestamp;
+                    console.log("Dina: Centratura completata");
+                }
+                break;
+        }
+    }
+
     // =============================================
     // 9. INIZIALIZZAZIONE
     // =============================================
@@ -1249,6 +1250,8 @@ document.addEventListener("DOMContentLoaded", () => {
             state.animationFrameId = requestAnimationFrame(gameLoop);
         }
 
+        gameObjects.dino.finalTargetX = elements.canvas.width/2 - scaleValue(150);
+        gameObjects.dina.finalTargetX = elements.canvas.width/2 + scaleValue(50);
         gameObjects.dino.x = gameObjects.dino.startX;
         gameObjects.dina.x = gameObjects.dina.startX;
         gameObjects.dina.visible = false;
