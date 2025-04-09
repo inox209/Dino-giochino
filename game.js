@@ -129,7 +129,14 @@ document.addEventListener("DOMContentLoaded", () => {
             keys: null,
             bass: null,
             drum: null
+        },
+
+        prizeMessage: {
+            container: document.createElement("div"),
+            text: document.createElement("div"),
+            button: document.createElement("a")
         }
+
     };
 
     // =============================================
@@ -196,6 +203,30 @@ document.addEventListener("DOMContentLoaded", () => {
     function isMobileDevice() {
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
                window.innerWidth <= CONFIG.MOBILE_BREAKPOINT;
+    }
+
+    function getResponsiveTextSizes(type = 'default') {
+        const baseSizes = {
+            title: {
+                desktop: 24,
+                mobile: 16,
+                lineHeightMultiplier: 1.2
+            },
+            default: {
+                desktop: 18,
+                mobile: 14,
+                lineHeightMultiplier: 1.3
+            }
+        };
+        
+        const config = baseSizes[type] || baseSizes.default;
+        const isMobile = isMobileDevice();
+        
+        return {
+            size: isMobile ? config.mobile : config.desktop,
+            lineHeight: (isMobile ? config.mobile : config.desktop) * config.lineHeightMultiplier,
+            letterSpacing: isMobile ? 0.5 : 1
+        };
     }
 
     function scaleValue(value, isWidth = true, options = {}) {
@@ -690,26 +721,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function drawPixelText(ctx, text, x, y, type, options = {}) {
-        const config = {
-            title: {
-                size: isMobileDevice() ? 20 : 30,
-                color: options.color || "white"
-            },
-            //subtitle: {
-            //    size: isMobileDevice() ? 16 : 24,
-            //    color: options.color || "white"
-            //},
-            default: {
-                size: isMobileDevice() ? 12 : 18,
-                color: options.color || "white"
-            }
-        };
-        
-        const style = config[type] || config.default;
+        const textStyle = getResponsiveTextSizes(type);
         
         ctx.save();
-        ctx.font = `bold ${style.size}px 'Press Start 2P', monospace`;
-        ctx.fillStyle = style.color;
+        ctx.font = `bold ${textStyle.size}px 'Press Start 2P', monospace`;
+        ctx.fillStyle = options.color || "white";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(text, x, y);
@@ -1005,28 +1021,24 @@ document.addEventListener("DOMContentLoaded", () => {
     
         // Messaggi iniziali
         if(state.gamePaused && state.popupState < messages.length) {
+            const currentMsg = messages[state.popupState];
+            const textStyle = getResponsiveTextSizes(currentMsg.type || 'default');
+            
             elements.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
             elements.ctx.fillRect(0, 0, elements.canvas.width, elements.canvas.height);
-            const currentMsg = messages[state.popupState];
-            const maxWidth = elements.canvas.width * 0.8; // Lascia un margine del 10% su ogni lato
-            const lineHeight = isMobileDevice() ? 20 : 30;
-            const font = currentMsg.type === "title" ? "bold 24px 'Press Start 2P'" : "18px 'Press Start 2P'";
-            const fontSize = isMobileDevice() ? 14 : 24;
             
             drawWrappedText(
                 elements.ctx,
                 currentMsg.text,
                 elements.canvas.width / 2,
                 elements.canvas.height / 2,
-                elements.canvas.width * 0.8, // maxWidth
-                lineHeight, //(altezza base di ogni riga)
+                elements.canvas.width * 0.8,
+                textStyle.lineHeight,
                 currentMsg.color,
                 {
-                    font: currentMsg.type === "title" 
-                          ? "bold 24px 'Press Start 2P'" 
-                          : "18px 'Press Start 2P'",
-                    letterSpacing: 1,   // 1px tra i caratteri
-                    lineSpacing: 1.5,   // 1.5 volte l'altezza di linea
+                    font: `bold ${textStyle.size}px 'Press Start 2P'`,
+                    letterSpacing: textStyle.letterSpacing,
+                    lineSpacing: 1.5,
                     align: "center",
                     baseline: "middle"
                 }
@@ -1057,19 +1069,26 @@ document.addEventListener("DOMContentLoaded", () => {
             setTimeout(() => {
                 elements.coverVideo.style.opacity = "1";
             }, 100);
-
+    
             if (elements.coverVideo.readyState >= 3) {
                 elements.coverVideo.play();
+                
+                // Mostra il messaggio dopo 1 secondo
+                setTimeout(() => {
+                    elements.prizeMessage.container.style.display = "flex";
+                }, 1000);
             }
-
+    
             elements.coverVideo.onended = () => {
                 elements.coverVideo.style.opacity = "0";
                 setTimeout(() => {
                     elements.coverVideo.pause();
                     elements.coverVideo.currentTime = 0;
                     elements.coverVideo.style.display = "none";
-                }, 2000);
-
+                    // RIMOSSO: elements.prizeMessage.container.style.display = "none";
+                    // Ora il messaggio rimane visibile
+                }, 1000);
+            
                 if (elements.audioSources.mare) {
                     elements.audioSources.mare.gainNode.gain.setValueAtTime(
                         elements.audioSources.mare.gainNode.gain.value, 
@@ -1087,6 +1106,66 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (elements.audioSources.drum) fadeOutAudio(elements.audioSources.drum, 1);
             };
         }
+    }
+
+    function setupPrizeMessage() {
+        // Configura il contenitore del messaggio
+        elements.prizeMessage.container.style.position = "fixed";
+        elements.prizeMessage.container.style.top = "65%";
+        elements.prizeMessage.container.style.left = "50%";
+        elements.prizeMessage.container.style.transform = "translate(-50%, -50%)";
+        elements.prizeMessage.container.style.display = "none";
+        elements.prizeMessage.container.style.flexDirection = "column";
+        elements.prizeMessage.container.style.alignItems = "center";
+        elements.prizeMessage.container.style.justifyContent = "center";
+        elements.prizeMessage.container.style.zIndex = "1000";
+        elements.prizeMessage.container.style.textAlign = "center";
+        elements.prizeMessage.container.style.pointerEvents = "auto";
+        elements.prizeMessage.container.style.width = "100%"; // Aggiunto per migliorare il responsive
+        
+        // Configura il testo
+        elements.prizeMessage.text.textContent = "Per riscuotere il tuo premio";
+        elements.prizeMessage.text.style.color = "white";
+        elements.prizeMessage.text.style.fontFamily = "'Press Start 2P', monospace";
+        elements.prizeMessage.text.style.fontSize = isMobileDevice() ? "16px" : "24px";
+        elements.prizeMessage.text.style.marginBottom = "20px";
+        elements.prizeMessage.text.style.textAlign = "center";
+        elements.prizeMessage.text.style.lineHeight = "1.5";
+        elements.prizeMessage.text.style.textShadow = "2px 2px 4px rgba(0, 0, 0, 0.8)"; // Aggiunto ombreggiatura per migliore leggibilità
+        
+        // Configura il pulsante
+        elements.prizeMessage.button.textContent = "clicca qui";
+        elements.prizeMessage.button.href = "https://distrokid.com/hyperfollow/inox209/una-nuova-scusa";
+        elements.prizeMessage.button.target = "_blank";
+        elements.prizeMessage.button.style.color = "#00ffff";
+        elements.prizeMessage.button.style.fontFamily = "'Press Start 2P', monospace";
+        elements.prizeMessage.button.style.fontSize = isMobileDevice() ? "14px" : "18px";
+        elements.prizeMessage.button.style.textDecoration = "none";
+        elements.prizeMessage.button.style.border = "2px solid #00ffff";
+        elements.prizeMessage.button.style.padding = "10px 20px";
+        elements.prizeMessage.button.style.borderRadius = "5px";
+        elements.prizeMessage.button.style.cursor = "pointer";
+        elements.prizeMessage.button.style.transition = "all 0.3s";
+        elements.prizeMessage.button.style.textShadow = "1px 1px 2px rgba(0, 0, 0, 0.8)"; // Aggiunto ombreggiatura
+        elements.prizeMessage.button.style.backgroundColor = "rgba(0, 0, 0, 0.5)"; // Sfondo semi-trasparente
+        
+        // Effetto hover per il pulsante
+        elements.prizeMessage.button.addEventListener("mouseenter", () => {
+            elements.prizeMessage.button.style.backgroundColor = "#00ffff";
+            elements.prizeMessage.button.style.color = "black";
+            elements.prizeMessage.button.style.textShadow = "none";
+        });
+        
+        elements.prizeMessage.button.addEventListener("mouseleave", () => {
+            elements.prizeMessage.button.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+            elements.prizeMessage.button.style.color = "#00ffff";
+            elements.prizeMessage.button.style.textShadow = "1px 1px 2px rgba(0, 0, 0, 0.8)";
+        });
+        
+        // Aggiungi gli elementi al DOM
+        elements.prizeMessage.container.appendChild(elements.prizeMessage.text);
+        elements.prizeMessage.container.appendChild(elements.prizeMessage.button);
+        document.body.appendChild(elements.prizeMessage.container);
     }
     
     function gameLoop(timestamp) {
@@ -1164,51 +1243,51 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function updateDinaAnimation(timestamp) {
-        if (!state.showDina) return;
-    
-        switch (gameObjects.dina.state) {
-            case "hidden":
-                gameObjects.dina.visible = true;
-                gameObjects.dina.state = "entering";
-                gameObjects.dina.x = gameObjects.dina.startX;
-                console.log("Dina: Inizio entrata da destra");
-                break;
-    
-            case "entering":
-                gameObjects.dina.x -= gameObjects.dina.entrySpeed;
-                
-                if (gameObjects.dina.x <= gameObjects.dina.entryTargetX) {
-                    gameObjects.dina.state = "pausing";
-                    gameObjects.dina.pauseStartTime = timestamp;
-                    console.log("Dina: Entrata completata, pausa di 2 secondi");
-                }
-                break;
-    
-            case "pausing":
-                if (timestamp - gameObjects.dina.pauseStartTime >= 2000) {
-                    gameObjects.dina.state = "movingToCenter";
-                    console.log("Dina: Fine pausa, inizio movimento al centro");
-                }
-                break;
-    
-            case "movingToCenter":
-                if (gameObjects.dino.x < gameObjects.dino.finalTargetX) {
-                    gameObjects.dino.x += gameObjects.dino.moveSpeed;
-                }
-    
-                if (gameObjects.dina.x > gameObjects.dina.finalTargetX) {
-                    gameObjects.dina.x -= gameObjects.dina.moveSpeed;
-                }
-    
-                if (Math.abs(gameObjects.dino.x - gameObjects.dino.finalTargetX) < 1 && 
-                    Math.abs(gameObjects.dina.x - gameObjects.dina.finalTargetX) < 1) {
-                    gameObjects.dina.state = "centered";
-                    state.maskStartTime = timestamp;
-                    console.log("Dina: Centratura completata");
-                }
-                break;
-        }
+    if (!state.showDina) return;
+
+    switch (gameObjects.dina.state) {
+        case "hidden":
+            gameObjects.dina.visible = true;
+            gameObjects.dina.state = "entering";
+            gameObjects.dina.x = gameObjects.dina.startX;
+            console.log("Dina: Inizio entrata da destra");
+            break;
+
+        case "entering":
+            gameObjects.dina.x -= gameObjects.dina.entrySpeed;
+            
+            if (gameObjects.dina.x <= gameObjects.dina.entryTargetX) {
+                gameObjects.dina.state = "pausing";
+                gameObjects.dina.pauseStartTime = timestamp;
+                console.log("Dina: Entrata completata, pausa di 2 secondi");
+            }
+            break;
+
+        case "pausing":
+            if (timestamp - gameObjects.dina.pauseStartTime >= 2000) {
+                gameObjects.dina.state = "movingToCenter";
+                console.log("Dina: Fine pausa, inizio movimento al centro");
+            }
+            break;
+
+        case "movingToCenter":
+            if (gameObjects.dino.x < gameObjects.dino.finalTargetX) {
+                gameObjects.dino.x += gameObjects.dino.moveSpeed;
+            }
+
+            if (gameObjects.dina.x > gameObjects.dina.finalTargetX) {
+                gameObjects.dina.x -= gameObjects.dina.moveSpeed;
+            }
+
+            if (Math.abs(gameObjects.dino.x - gameObjects.dino.finalTargetX) < 1 && 
+                Math.abs(gameObjects.dina.x - gameObjects.dina.finalTargetX) < 1) {
+                gameObjects.dina.state = "centered";
+                state.maskStartTime = timestamp;
+                console.log("Dina: Centratura completata");
+            }
+            break;
     }
+}
 
     // =============================================
     // 9. INIZIALIZZAZIONE
@@ -1217,6 +1296,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Inizializza canvas e risorse
         resizeCanvas();
         initResources();
+        setupPrizeMessage();
         
         // Configura event listeners
         window.addEventListener("resize", resizeCanvas);
