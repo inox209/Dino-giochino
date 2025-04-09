@@ -29,6 +29,26 @@ document.addEventListener("DOMContentLoaded", () => {
         MASK_PAUSE_DURATION: 2000,
         MASK_DURATION: 5000
     };
+    document.head.insertAdjacentHTML('beforeend', `
+        <style>
+            @media (max-width: 768px) {
+                #gameCanvas {
+                    position: relative !important;
+                    z-index: 1;
+                }
+                .prize-message-container {
+                    position: absolute !important;
+                    top: 65% !important;
+                    width: 90% !important;
+                    z-index: 1001;
+                }
+                .prize-message-container a {
+                    font-size: 14px !important;
+                    padding: 10px 15px !important;
+                }
+            }
+        </style>
+    `);
 
     // =============================================
     // 2. VARIABILI DI STATO
@@ -1108,6 +1128,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function setupPrizeMessage() {
+        elements.prizeMessage.container.className = "prize-message-container";
+        const isMobile = isMobileDevice();
+        elements.prizeMessage.text.style.fontSize = isMobile ? "14px" : "24px";
+        elements.prizeMessage.text.style.padding = isMobile ? "0 20px" : "0";
+        elements.prizeMessage.text.style.marginBottom = isMobile ? "15px" : "20px";   
+        elements.prizeMessage.button.style.fontSize = isMobile ? "12px" : "18px";
+        elements.prizeMessage.button.style.padding = isMobile ? "8px 16px" : "10px 20px";
+        
+        // Aggiungi questo per gestire meglio il touch su mobile
+        elements.prizeMessage.button.style.webkitTapHighlightColor = "transparent";
+        elements.prizeMessage.button.style.userSelect = "none";
+
         // Configura il contenitore del messaggio
         elements.prizeMessage.container.style.position = "fixed";
         elements.prizeMessage.container.style.top = "65%";
@@ -1334,6 +1366,24 @@ document.addEventListener("DOMContentLoaded", () => {
         gameObjects.dino.x = gameObjects.dino.startX;
         gameObjects.dina.x = gameObjects.dina.startX;
         gameObjects.dina.visible = false;
+        elements.coverVideo.addEventListener('loadedmetadata', function() {
+            // Imposta le dimensioni corrette per mobile
+            if (isMobileDevice()) {
+                const videoRatio = this.videoWidth / this.videoHeight;
+                const mobileWidth = Math.min(window.innerWidth * 0.95, elements.canvas.width);
+                const mobileHeight = mobileWidth / videoRatio;
+                
+                this.style.width = `${mobileWidth}px`;
+                this.style.height = `${mobileHeight}px`;
+            }
+        });
+        
+        // Forza il ridimensionamento iniziale su mobile
+        if (isMobileDevice()) {
+            setTimeout(() => {
+                elements.coverVideo.dispatchEvent(new Event('loadedmetadata'));
+            }, 500);
+        }
     }
 
     // Avvia il gioco
