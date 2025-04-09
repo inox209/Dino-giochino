@@ -142,9 +142,9 @@ document.addEventListener("DOMContentLoaded", () => {
             width: scaleValue(isMobileDevice() ? 150 : 120, true, { isDino: true }),
             height: scaleValue(isMobileDevice() ? 150 : 120, false, { isDino: true }),
             isJumping: false,
-            jumpSpeed: isMobileDevice() ? -12 : -18,
-            gravity: isMobileDevice() ? 0.8 : 0.5,
-            maxJumpHeight: isMobileDevice() ? 160 : 220,
+            jumpSpeed: isMobileDevice() ? -13 : -18,
+            gravity: isMobileDevice() ? 0.8 : 0.6,
+            maxJumpHeight: isMobileDevice() ? 160 : 250,
             startX: scaleValue(100),
             finalTargetX: elements.canvas.width/2 - scaleValue(150),
             moveSpeed: 2
