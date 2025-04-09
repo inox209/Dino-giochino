@@ -1055,29 +1055,28 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("Maschera completamente chiusa - Nascondi la scritta e il tasto 'Salta'");
     
             const desktopMessage = document.getElementById("desktopMessage");
-            if (desktopMessage) {
-                desktopMessage.style.display = "none";
-            }
-    
-            if (elements.jumpButton) {
-                elements.jumpButton.style.display = "none";
-            }
+            if (desktopMessage) desktopMessage.style.display = "none";            
+            if (elements.jumpButton) elements.jumpButton.style.display = "none";
     
             state.coverVideoPlayed = true;
             elements.coverVideo.style.display = "block";
             elements.coverVideo.style.opacity = "0";
+            elements.coverVideo.load();
             setTimeout(() => {
                 elements.coverVideo.style.opacity = "1";
+                const playPromise = elements.coverVideo.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log("Errore riproduzione video:", error);
+                        // Fallback: mostra comunque il messaggio se il video non può essere riprodotto
+                        elements.prizeMessage.container.style.display = "flex";
+                    });
+                }
             }, 100);
-    
-            if (elements.coverVideo.readyState >= 3) {
-                elements.coverVideo.play();
-                
-                // Mostra il messaggio dopo 1 secondo
-                setTimeout(() => {
-                    elements.prizeMessage.container.style.display = "flex";
-                }, 1000);
-            }
+ 
+            setTimeout(() => {
+                elements.prizeMessage.container.style.display = "flex";
+            }, 1000);
     
             elements.coverVideo.onended = () => {
                 elements.coverVideo.style.opacity = "0";
