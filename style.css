@@ -8,7 +8,7 @@ body {
     height: 100vh;
     background-color: #000000;
     overflow: hidden;
-    font-family: Arial, sans-serif;
+    font-family: 'Press Start 2P', Arial, sans-serif; /* Font principale */
 }
 
 /* Canvas del gioco */
@@ -40,8 +40,8 @@ body {
     width: 150px;
     height: 60px;
     font-size: 24px;
-    background-color: #4CAF50;
-    color: red;
+    background-color: #00ffff;
+    color: black;
     border: none;
     border-radius: 10px;
     cursor: pointer;
@@ -80,5 +80,9 @@ body {
 
     #desktopMessage {
         display: block; /* Mostra il messaggio per desktop */
+    }
+
+    .hidden {
+        display: none !important;
     }
 }
