@@ -174,8 +174,8 @@ document.addEventListener("DOMContentLoaded", () => {
         dino: {
             x: scaleValue(100),
             y: scaleValue(250, false),
-            width: scaleValue(isMobileDevice() ? 150 : 150, true, { isDino: true }),
-            height: scaleValue(isMobileDevice() ? 150 : 150, false, { isDino: true }),
+            width: scaleValue(isMobileDevice() ? 180 : 150, true, { isDino: true }),
+            height: scaleValue(isMobileDevice() ? 180 : 150, false, { isDino: true }),
             isJumping: false,
             jumpSpeed: isMobileDevice() ? -15 : -18,
             gravity: isMobileDevice() ? 0.7 : 0.55,
@@ -749,13 +749,35 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function drawPixelText(ctx, text, x, y, type, options = {}) {
-        const textStyle = getResponsiveTextSizes(type);
+        // Dimensioni responsive
+        const sizes = {
+            title: {
+                desktop: 24,
+                mobile: 16, // Riduci questo valore per mobile (es. da 16 a 14)
+                lineHeight: 1.2
+            },
+            default: {
+                desktop: 18,
+                mobile: 14, // Riduci questo valore per mobile (es. da 14 a 12)
+                lineHeight: 1.3
+            }
+        };
+    
+        const config = sizes[type] || sizes.default;
+        const fontSize = isMobileDevice() ? config.mobile : config.desktop;
+        
+        // Stile del testo
         ctx.save();
-        ctx.font = `bold ${textStyle.size}px 'Press Start 2P', monospace`;
+        ctx.font = `bold ${fontSize}px 'Press Start 2P', monospace`;
         ctx.fillStyle = options.color || "white";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(text, x, y);
+        ctx.textAlign = options.align || "center";
+        ctx.textBaseline = options.baseline || "middle";
+        
+        // Posizionamento speciale per mobile
+        const adjustedX = isMobileDevice() ? x * 0.8 : x; // Riduci l'offset X su mobile
+        const adjustedY = isMobileDevice() ? y * 1.2 : y; // Aumenta l'offset Y su mobile
+        
+        ctx.fillText(text, adjustedX, adjustedY);
         ctx.restore();
     }
 
