@@ -1290,6 +1290,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 !state.maskStartTime) {
                 state.maskStartTime = timestamp;
                 console.log("Posizioni finali raggiunte");
+                elements.jumpButton.classList.add('hidden');
+                document.getElementById('desktopMessage').classList.add('hidden');
             }
         }
     }
