@@ -177,9 +177,9 @@ document.addEventListener("DOMContentLoaded", () => {
             width: scaleValue(isMobileDevice() ? 150 : 150, true, { isDino: true }),
             height: scaleValue(isMobileDevice() ? 150 : 150, false, { isDino: true }),
             isJumping: false,
-            jumpSpeed: isMobileDevice() ? -13 : -18,
-            gravity: isMobileDevice() ? 0.8 : 0.55,
-            maxJumpHeight: isMobileDevice() ? 160 : 250,
+            jumpSpeed: isMobileDevice() ? -15 : -18,
+            gravity: isMobileDevice() ? 0.7 : 0.55,
+            maxJumpHeight: isMobileDevice() ? 180 : 250,
             startX: scaleValue(100),
             finalTargetX: elements.canvas.width/2 - scaleValue(150),
             moveSpeed: 2
@@ -219,8 +219,8 @@ document.addEventListener("DOMContentLoaded", () => {
         castello: { 
             x: elements.canvas.width, 
             y: elements.canvas.height - getMobileObstacleOffset(),
-            width: scaleValue(isMobileDevice() ? 150 : 150, true, { isobstacle: true }),
-            height: scaleValue(isMobileDevice() ? 150 : 150, true, { isobstacle: true }),
+            width: scaleValue(isMobileDevice() ? 50 : 150, true, { isobstacle: true }),
+            height: scaleValue(isMobileDevice() ? 50 : 150, true, { isobstacle: true }),
             visible: false 
         }
     };
