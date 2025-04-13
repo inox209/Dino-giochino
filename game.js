@@ -1175,18 +1175,8 @@ document.addEventListener("DOMContentLoaded", () => {
         elements.prizeMessage.container.style.pointerEvents = "auto";
         elements.prizeMessage.container.style.width = "100%"; // Aggiunto per migliorare il responsive
         
-        // Configura il testo
-        elements.prizeMessage.text.textContent = "Per riscuotere il tuo premio";
-        elements.prizeMessage.text.style.color = "white";
-        elements.prizeMessage.text.style.fontFamily = "'Press Start 2P', monospace";
-        elements.prizeMessage.text.style.fontSize = isMobileDevice() ? "16px" : "24px";
-        elements.prizeMessage.text.style.marginBottom = "20px";
-        elements.prizeMessage.text.style.textAlign = "center";
-        elements.prizeMessage.text.style.lineHeight = "1.5";
-        elements.prizeMessage.text.style.textShadow = "2px 2px 4px rgba(0, 0, 0, 0.8)"; // Aggiunto ombreggiatura per migliore leggibilità
-        
         // Configura il pulsante
-        elements.prizeMessage.button.textContent = "clicca qui";
+        elements.prizeMessage.button.textContent = "E ora?";
         elements.prizeMessage.button.href = "https://distrokid.com/hyperfollow/inox209/una-nuova-scusa";
         elements.prizeMessage.button.target = "_blank";
         elements.prizeMessage.button.style.color = "#00ffff";
@@ -1338,6 +1328,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 gameObjects.dina.state = "centered";
                 state.maskStartTime = timestamp;
                 console.log("Dina: Centratura completata");
+                elements.jumpButton.classList.add('hidden');
+                document.getElementById('desktopMessage').classList.add('hidden');
             }
             break;
     }
