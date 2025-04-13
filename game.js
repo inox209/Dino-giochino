@@ -1075,6 +1075,9 @@ document.addEventListener("DOMContentLoaded", () => {
         // Maschera a cuore
         if (state.maskProgress > 0) {
             drawHeartMask(elements.ctx, state.maskProgress);
+            document.querySelectorAll('#jumpButton, #desktopMessage').forEach(el => {
+                el.style.display = 'none';
+            });
         }
     
         // Fine gioco
