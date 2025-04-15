@@ -26,6 +26,8 @@ body {
     image-rendering: -webkit-crisp-edges;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
+    -webkit-font-smoothing: none;
+    font-smooth: never;
 }
 
 /* ========== UI CONTROLLI ========== */
@@ -90,6 +92,11 @@ body {
 .prize-message-container a:hover {
     background-color: #00ffff;
     color: #000;
+}
+
+.popup-text {
+    text-shadow: none !important;
+    -webkit-text-stroke: 0.5px black; /* Migliora leggibilità */
 }
 
 /* ========== MEDIA QUERIES ========== */
