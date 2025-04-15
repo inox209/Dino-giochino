@@ -832,12 +832,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const sizes = {
             title: {
                 desktop: 24,
-                mobile: 16, // Riduci questo valore per mobile (es. da 16 a 14)
+                mobile: 12, // Riduci questo valore per mobile (es. da 16 a 14)
                 lineHeight: 1.2
             },
             default: {
                 desktop: 18,
-                mobile: 14, // Riduci questo valore per mobile (es. da 14 a 12)
+                mobile: 10, // Riduci questo valore per mobile (es. da 14 a 12)
                 lineHeight: 1.3
             }
         };
@@ -1187,53 +1187,30 @@ document.addEventListener("DOMContentLoaded", () => {
     function draw() {
         elements.ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
         drawGameElements(elements.ctx);
-    
         // Messaggi iniziali
         if(state.gamePaused && state.popupState < messages.length) {
             const currentMsg = messages[state.popupState];
-            
-            // Sfondo semitrasparente più contenuto
-            elements.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-            elements.ctx.fillRect(0, 0, elements.canvas.width, elements.canvas.height);
-            
-            // Sfondo nero più contenuto per il testo
-            const bgPadding = isMobileDevice() ? 10 : 20;
-            const bgWidth = elements.canvas.width * 0.9;
-            const bgHeight = drawWrappedText(
-                elements.ctx,
-                currentMsg.text,
-                elements.canvas.width / 2,
-                elements.canvas.height / 2,
-                bgWidth - bgPadding * 2,
-                isMobileDevice() ? 16 : 24,
-                currentMsg.color,
-                {
-                    font: isMobileDevice() ? "bold 12px 'Press Start 2P'" : "bold 18px 'Press Start 2P'",
-                    lineSpacing: 1.2
-                }
-            ) + bgPadding * 2;
-            
-            // Sfondo nero con bordi arrotondati per il testo
+                
+            // Sfondo semitrasparente che copre tutto il canvas
             elements.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-            elements.ctx.beginPath();
-            elements.ctx.roundRect(
-                (elements.canvas.width - bgWidth) / 2,
-                (elements.canvas.height - bgHeight) / 2,
-                bgWidth,
-                bgHeight,
-                10
-            );
-            elements.ctx.fill();
-            
-            // Testo
+            elements.ctx.fillRect(0, 0, elements.canvas.width, elements.canvas.height);
+        
+            // Testo - DIMENSIONI RIDOTTE PER MOBILE
+            const fontSize = isMobileDevice() ? 10 : 18;
+            const lineHeight = isMobileDevice() ? 16 : 24;
+                
             drawWrappedText(
                 elements.ctx,
                 currentMsg.text,
                 elements.canvas.width / 2,
                 elements.canvas.height / 2,
-                bgWidth - bgPadding * 2,
-                isMobileDevice() ? 16 : 24,
-                currentMsg.color
+                elements.canvas.width * 0.9,
+                lineHeight,
+                currentMsg.color,
+                {
+                    font: `bold ${fontSize}px 'Press Start 2P'`,
+                    lineSpacing: 1.2
+                }
             );
         }
     
@@ -1376,6 +1353,14 @@ document.addEventListener("DOMContentLoaded", () => {
         elements.prizeMessage.container.appendChild(elements.prizeMessage.text);
         elements.prizeMessage.container.appendChild(elements.prizeMessage.button);
         document.body.appendChild(elements.prizeMessage.container);
+
+        if(isMobileDevice()) {
+            elements.prizeMessage.container.style.top = "60%";
+            elements.prizeMessage.button.style.fontSize = "10px";
+            elements.prizeMessage.button.style.padding = "6px 12px";
+            elements.prizeMessage.text.style.fontSize = "10px";
+            elements.prizeMessage.text.style.marginBottom = "10px";
+        }
     }
     
     function gameLoop(timestamp) {
@@ -1538,12 +1523,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.addEventListener("keydown", handleJump);
         elements.jumpButton.addEventListener("click", handleJump);
         elements.jumpButton.addEventListener("touchstart", handleJump, { passive: true });
-        
-        // Configurazioni specifiche per piattaforma
-        //if (!isMobileDevice()) {
-        //    gameObjects.dino.width = scaleValue(180, true, true);
-        //    gameObjects.dino.height = scaleValue(180, false, true);
-        //}
+
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'a' || e.key === 'A') {
@@ -1581,6 +1561,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 this.style.height = `${mobileHeight}px`;
             }
         });
+
+        elements.canvas.style.imageRendering = '-webkit-optimize-contrast';
+        elements.canvas.style.imageRendering = 'pixelated';
+        elements.canvas.style.imageRendering = 'crisp-edges';
+        elements.ctx.imageSmoothingEnabled = false;
         
         // Forza il ridimensionamento iniziale su mobile
         if (isMobileDevice()) {
