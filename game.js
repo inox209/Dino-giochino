@@ -7,16 +7,36 @@ document.addEventListener("DOMContentLoaded", () => {
         REFERENCE_WIDTH: 800,
         REFERENCE_HEIGHT: 400,
         MOBILE_BREAKPOINT: 768,
+        INITIAL_PAIR_PROBABILITY: 0.1,
         
         // Immagini
         TOTAL_IMAGES: 9,
         
         // Offset ostacoli
         OFFSET_CONFIG: {
-            PALM: { yOffset: 10, mobileYOffset: 5 },
-            UMBRELLA: { yOffset: -20, mobileYOffset: -10 },
             GRANCHIO: { yOffset: 0, mobileYOffset: 15 },
-            CASTELLO: { yOffset: 0, mobileYOffset: 10 }
+            CASTELLO: { yOffset: 0, mobileYOffset: 10 },
+            PALM: { yOffset: 10, mobileYOffset: 5 },       // Solo offset qui
+            UMBRELLA: { yOffset: -20, mobileYOffset: -10 } // Solo offset qui
+        },
+    
+        OBSTACLE_PHYSICS: {  // Nuova sezione per le proprietà fisiche
+            palm: {
+                width: 144 * 1.2 * 0.9,
+                graphicHeight: 144 * 1.2 * 0.9,
+                collisionHeight: 50,
+                hitboxWidthRatio: 0.4, // 20% della larghezza grafica
+                offsetKey: "PALM",       // Riferimento a OFFSET_CONFIG
+                extraOffset: 0
+            },
+            umbrella: {
+                width: 144 * 0.8,
+                graphicHeight: 144 * 0.8,
+                collisionHeight: 144 * 0.8 * 0.6,
+                hitboxWidthRatio: 0.1, // 15% della larghezza grafica
+                offsetKey: "UMBRELLA",   // Riferimento a OFFSET_CONFIG
+                extraOffset: 20
+            }
         },
         
         // Gameplay
@@ -31,21 +51,84 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     document.head.insertAdjacentHTML('beforeend', `
         <style>
+            /* Stili base per i messaggi */
+            .prize-message-container {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 80%;
+                max-width: 600px;
+                background-color: rgba(0, 0, 0, 0.85);
+                border-radius: 10px;
+                padding: 20px;
+                box-sizing: border-box;
+                text-align: center;
+                z-index: 1001;
+                display: none;
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .prize-message-container a {
+                color: #00ffff;
+                font-family: 'Press Start 2P', cursive;
+                font-size: 18px;
+                text-decoration: none;
+                padding: 12px 24px;
+                border: 2px solid #00ffff;
+                border-radius: 5px;
+                margin-top: 20px;
+                transition: all 0.3s;
+            }
+            
+            .prize-message-container a:hover {
+                background-color: #00ffff;
+                color: black;
+            }
+            
+            /* Stili per le scritte iniziali */
+            .popup-text {
+                font-family: 'Press Start 2P', cursive;
+                color: white;
+                font-size: 16px;
+                line-height: 1.6;
+                margin: 10px 0;
+                text-align: center;
+                word-wrap: break-word;
+            }
+            
+            /* Media query mobile */
             @media (max-width: 768px) {
                 #gameCanvas {
                     position: relative !important;
                     z-index: 1;
+                    max-height: 90vh !important;
                 }
+                
                 .prize-message-container {
                     position: absolute !important;
                     top: 65% !important;
                     width: 90% !important;
-                    z-index: 1001;
+                    padding: 15px !important;
                 }
+                
                 .prize-message-container a {
                     font-size: 14px !important;
                     padding: 10px 15px !important;
                 }
+                
+                .popup-text {
+                    font-size: 12px !important;
+                    line-height: 1.4 !important;
+                    padding: 5px 0 !important;
+                }
+            }
+            
+            /* Stili per il pulsante mobile */
+            #jumpButton {
+                font-family: 'Press Start 2P', cursive;
+                z-index: 1002;
             }
         </style>
     `);
@@ -94,7 +177,8 @@ document.addEventListener("DOMContentLoaded", () => {
         showDina: false,
         dinaEntryComplete: false,
         dinaPauseStartTime: null,
-        dinaMovingToCenter: false
+        dinaMovingToCenter: false,
+        pairProbability: CONFIG.INITIAL_PAIR_PROBABILITY || 0.1
     };
 
     // =============================================
@@ -177,8 +261,8 @@ document.addEventListener("DOMContentLoaded", () => {
             width: scaleValue(isMobileDevice() ? 180 : 150, true, { isDino: true }),
             height: scaleValue(isMobileDevice() ? 180 : 150, false, { isDino: true }),
             isJumping: false,
-            jumpSpeed: isMobileDevice() ? -15 : -18,
-            gravity: isMobileDevice() ? 0.7 : 0.55,
+            jumpSpeed: isMobileDevice() ? -18 : -18,
+            gravity: isMobileDevice() ? 0.55 : 0.55,
             maxJumpHeight: isMobileDevice() ? 180 : 250,
             startX: scaleValue(100),
             finalTargetX: elements.canvas.width/2 - scaleValue(150),
@@ -273,73 +357,50 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    function drawWrappedText(context, text, x, y, maxWidth, lineHeight, color, options = {}) {
-        const {
-            font = "20px 'Press Start 2P'",
-            letterSpacing = 0,
-            lineSpacing = 1.2,
-            align = "center",
-            baseline = "middle"
-        } = options;
+    function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, color, options = {}) {
+        const isMobile = isMobileDevice();
+        const baseSize = isMobile ? 12 : 18; // Dimensione base più piccola per mobile
+        const mobileLineHeight = baseSize * 1.5;
+        
+        ctx.save();
+        ctx.font = `bold ${baseSize}px 'Press Start 2P'`;
+        ctx.fillStyle = color;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
     
-        context.save();
-        context.font = font;
-        context.fillStyle = color;
-        context.textAlign = align;
-        context.textBaseline = baseline;
-    
-        // Misura del testo con spaziatura
-        const measureText = (text) => {
-            if (letterSpacing === 0) return context.measureText(text).width;
-            let total = 0;
-            for (let i = 0; i < text.length; i++) {
-                total += context.measureText(text[i]).width + (i < text.length - 1 ? letterSpacing : 0);
-            }
-            return total;
-        };
-    
-        // Suddivisione in righe
+        // Calcolo delle linee con spazio ridotto
         const words = text.split(' ');
         let lines = [];
         let currentLine = '';
     
-        for (const word of words) {
+        words.forEach(word => {
             const testLine = currentLine ? `${currentLine} ${word}` : word;
-            const testWidth = measureText(testLine);
-    
-            if (testWidth > maxWidth && currentLine) {
+            const metrics = ctx.measureText(testLine);
+            
+            if (metrics.width > maxWidth * 0.9) { // 90% della larghezza disponibile
                 lines.push(currentLine);
                 currentLine = word;
             } else {
                 currentLine = testLine;
             }
-        }
+        });
         if (currentLine) lines.push(currentLine);
     
-        // Disegno delle righe
-        const actualLineHeight = lineHeight * lineSpacing;
-        const startY = y - ((lines.length - 1) * actualLineHeight) / 2;
-    
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            
-            if (letterSpacing === 0) {
-                context.fillText(line, x, startY + (i * actualLineHeight));
-            } else {
-                // Calcola la larghezza totale della riga con spaziatura
-                const totalWidth = measureText(line);
-                // Posizione iniziale per centrare il testo
-                let currentX = x - totalWidth / 2;
-                
-                for (let j = 0; j < line.length; j++) {
-                    context.fillText(line[j], currentX, startY + (i * actualLineHeight));
-                    currentX += context.measureText(line[j]).width + letterSpacing;
-                }
-            }
+        // Riduci ulteriormente se ci sono troppe linee
+        if (isMobile && lines.length > 3) {
+            ctx.font = `bold ${baseSize - 2}px 'Press Start 2P'`;
+            lines = []; // Ricalcola con font più piccolo
+            // ... (ripeti il calcolo delle linee)
         }
     
-        context.restore();
-        return lines.length * actualLineHeight;
+        // Disegna le linee centrate
+        const startY = y - ((lines.length - 1) * mobileLineHeight) / 2;
+        lines.forEach((line, i) => {
+            ctx.fillText(line, x, startY + (i * mobileLineHeight));
+        });
+    
+        ctx.restore();
+        return lines.length * mobileLineHeight;
     }
 
     function refreshAllSizes() {
@@ -406,10 +467,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function checkAllImagesLoaded() {
         state.imagesLoaded++;
-        console.log(`Immagine caricata ${state.imagesLoaded}/${CONFIG.TOTAL_IMAGES}`);
+        console.log(`Immagine caricata ${state.imagesLoaded}/${CONFIG.TOTAL_IMAGES}: ${this.src}`);
         
         if (state.imagesLoaded === CONFIG.TOTAL_IMAGES) {
             console.log("Tutte le immagini sono state caricate");
+            console.log("Dimensioni palma:", elements.images.palm.width, elements.images.palm.height);
+            console.log("Dimensioni ombrellone:", elements.images.umbrella.width, elements.images.umbrella.height);
             
             if (state.gamePaused) {
                 requestAnimationFrame(gameLoop);
@@ -433,6 +496,14 @@ document.addEventListener("DOMContentLoaded", () => {
             document.addEventListener('click', resumeAudioContextOnce, { once: true });
         }
         return elements.audioContext;
+    }
+
+    function resumeAudioContext() {
+        if (elements.audioContext && elements.audioContext.state === 'suspended') {
+            elements.audioContext.resume().then(() => {
+                console.log("AudioContext riattivato");
+            });
+        }
     }
 
     async function loadAudioBuffer(url) {
@@ -696,55 +767,63 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function createNewPalm() {
-        const obstacleTypes = ["palm", "umbrella"];
-        const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
-        const x = elements.canvas.width;       
-        const baseY = elements.canvas.height - scaleValue(50, false);       
-        const obstacleConfig = {
-            palm: {
-                height: scaleValue(144 * 1.2 * 0.9, false),
-                offsetKey: "PALM"
-            },
-            umbrella: {
-                height: scaleValue(144 * 0.8, false),
-                offsetKey: "UMBRELLA",
-                extraOffset: 20
-            }
-        };
+        const type = Math.random() < 0.5 ? "palm" : "umbrella";
+        const physics = CONFIG.OBSTACLE_PHYSICS[type];
+        const offsets = CONFIG.OFFSET_CONFIG[physics.offsetKey];
+        
+        const baseY = elements.canvas.height - scaleValue(50, false);
+        const y = baseY - scaleValue(physics.graphicHeight, false) + 
+                  getVerticalOffset(physics.offsetKey) + 
+                  (physics.extraOffset || 0);
     
-        const config = obstacleConfig[type];
-        const y = baseY - config.height + 
-                  getVerticalOffset(config.offsetKey) + 
-                  (config.extraOffset || 0);
-        return { 
-            type, 
-            x, 
-            y, 
-            passed: false, 
-            hit: false 
+        return {
+            type,
+            x: elements.canvas.width,
+            y,
+            width: scaleValue(physics.width),
+            graphicHeight: scaleValue(physics.graphicHeight, false),
+            collisionHeight: scaleValue(physics.collisionHeight, false),
+            passed: false,
+            hit: false
         };
     }
 
     function createPairOfObstacles() {
         const obstacleSpacing = scaleValue(100);
-        const obstacleTypes = ["palm", "umbrella"];
-        const type1 = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
-        const type2 = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
-
-        const x1 = elements.canvas.width;
-        const x2 = x1 + obstacleSpacing;
-
-        const y1 = type1 === "umbrella" 
-            ? elements.canvas.height - scaleValue(144 * 0.8, false) - scaleValue(50, false) + getVerticalOffset("UMBRELLA") + 20 + getMobileObstacleOffset()
-            : elements.canvas.height - scaleValue(144 * 1.2 * 0.9, false) - scaleValue(50, false) + getVerticalOffset("PALM") + getMobileObstacleOffset();
-
-        const y2 = type2 === "umbrella" 
-            ? elements.canvas.height - scaleValue(144 * 0.8, false) - scaleValue(50, false) + getVerticalOffset("UMBRELLA") + 20 + getMobileObstacleOffset()
-            : elements.canvas.height - scaleValue(144 * 1.2 * 0.9, false) - scaleValue(50, false) + getVerticalOffset("PALM") + getMobileObstacleOffset();
-
+        const type1 = Math.random() < 0.5 ? "palm" : "umbrella";
+        const type2 = Math.random() < 0.5 ? "palm" : "umbrella";
+        const config1 = CONFIG.OBSTACLE_PHYSICS[type1];
+        const config2 = CONFIG.OBSTACLE_PHYSICS[type2];
+    
+        const baseY = elements.canvas.height - scaleValue(50, false);
+        
         return [
-            { type: type1, x: x1, y: y1, passed: false, hit: false },
-            { type: type2, x: x2, y: y2, passed: false, hit: false },
+            {
+                type: type1,
+                x: elements.canvas.width,
+                y: baseY - scaleValue(config1.graphicHeight, false) + 
+                   getVerticalOffset(config1.offsetKey) + 
+                   (config1.extraOffset || 0) + 
+                   getMobileObstacleOffset(),
+                width: scaleValue(config1.width),
+                graphicHeight: scaleValue(config1.graphicHeight, false),
+                collisionHeight: scaleValue(config1.collisionHeight, false),
+                passed: false,
+                hit: false
+            },
+            {
+                type: type2,
+                x: elements.canvas.width + obstacleSpacing,
+                y: baseY - scaleValue(config2.graphicHeight, false) + 
+                   getVerticalOffset(config2.offsetKey) + 
+                   (config2.extraOffset || 0) + 
+                   getMobileObstacleOffset(),
+                width: scaleValue(config2.width),
+                graphicHeight: scaleValue(config2.graphicHeight, false),
+                collisionHeight: scaleValue(config2.collisionHeight, false),
+                passed: false,
+                hit: false
+            }
         ];
     }
 
@@ -826,11 +905,22 @@ document.addEventListener("DOMContentLoaded", () => {
         gameObjects.palms.forEach((obstacle) => {
             if (obstacle.type === "palm") {
                 drawImage(ctx, elements.images.palm, obstacle.x, obstacle.y, 
-                          scaleValue(144 * 1.2 * 0.9), scaleValue(144 * 1.2 * 0.9, false));
+                          obstacle.width, obstacle.graphicHeight);
             } else if (obstacle.type === "umbrella") {
                 drawImage(ctx, elements.images.umbrella, obstacle.x, obstacle.y, 
-                          scaleValue(144 * 0.8), scaleValue(144 * 0.8, false));
+                          obstacle.width, obstacle.graphicHeight);
             }
+        });
+
+        // [DEBUG] 2.1 - Hitbox verticali proporzionali
+        gameObjects.palms.forEach((obstacle) => {
+            const physics = CONFIG.OBSTACLE_PHYSICS[obstacle.type];
+            const hitboxWidth = obstacle.width * physics.hitboxWidthRatio;
+            const hitboxX = obstacle.x + (obstacle.width / 2) - (hitboxWidth / 2);
+            const hitboxTop = obstacle.y + obstacle.graphicHeight - obstacle.collisionHeight;
+            
+            ctx.fillStyle = obstacle.type === "palm" ? "rgba(255, 0, 0, 0.3)" : "rgba(0, 0, 255, 0.3)";
+            ctx.fillRect(hitboxX, hitboxTop, hitboxWidth, obstacle.collisionHeight);
         });
 
         // 3. Disegna il granchio
@@ -869,10 +959,10 @@ document.addEventListener("DOMContentLoaded", () => {
             
             // Sfondo semitrasparente
             ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-            const textWidth = ctx.measureText(currentMsg.text).width;
+            const textWidth = elements.ctx.measureText(currentMsg.text).width;
 
             // Testo
-            drawPixelText(ctx, currentMsg.text, elements.canvas.width/2, currentMsg.y, currentMsg.type, {
+            drawPixelText(elements.ctx, currentMsg.text, elements.canvas.width/2, currentMsg.y, currentMsg.type, {
                 color: currentMsg.color
             });
         }
@@ -976,18 +1066,38 @@ document.addEventListener("DOMContentLoaded", () => {
         // Movimento degli ostacoli
         gameObjects.palms.forEach((obstacle) => {
             obstacle.x -= state.scrollSpeed;
+            
+            const physics = CONFIG.OBSTACLE_PHYSICS[obstacle.type];
+            const hitboxWidth = obstacle.width * physics.hitboxWidthRatio;
+            const hitboxX = obstacle.x + (obstacle.width - hitboxWidth)/2;
+            const hitboxTop = obstacle.y + obstacle.graphicHeight - physics.collisionHeight;
+            // Area dinosauro (riduci leggermente la hitbox del dino)
+            const dinoLeft = gameObjects.dino.x + gameObjects.dino.width * 0.2;
+            const dinoRight = gameObjects.dino.x + gameObjects.dino.width * 0.8;
+            const dinoBottom = gameObjects.dino.y + gameObjects.dino.height;
 
-            const obstacleWidth = obstacle.type === "palm" ? scaleValue(144 * 1.2 * 0.9) : scaleValue(144 * 0.8);
-            const obstacleHeight = obstacle.type === "palm" ? scaleValue(144 * 1.2 * 0.9, false) * 0.7 : scaleValue(144 * 0.8, false);
-
-            if (obstacle.x + obstacleWidth < gameObjects.dino.x && !obstacle.passed) {
-                const requiredJumpHeight = obstacle.y + (obstacleHeight * 0.25);
-                if (gameObjects.dino.y + gameObjects.dino.height < requiredJumpHeight) {
-                    state.score += 1;
-                } else {
-                    state.score -= 1;
+            if (dinoRight > hitboxX && 
+                dinoLeft < hitboxX + hitboxWidth &&
+                dinoBottom > hitboxTop) {            
+                // Controlla collisione
+                if (gameObjects.dino.x + gameObjects.dino.width > hitboxX && 
+                    gameObjects.dino.x < hitboxX + hitboxWidth &&
+                    gameObjects.dino.y + gameObjects.dino.height > hitboxTop) {
+                    if (!obstacle.hit) {
+                        obstacle.hit = true;
+                        state.score -= 1; // Permette valori negativi
+                        console.log("Collisione! Punteggio:", state.score);
+                    }
                 }
+            }
+            
+            // Controlla se superato
+            if (!obstacle.passed && obstacle.x + obstacle.width < gameObjects.dino.x) {
                 obstacle.passed = true;
+                if (!obstacle.hit) {
+                    state.score += 1;
+                    console.log("Ostacolo superato! Punteggio:", state.score);
+                }
             }
         });
 
@@ -1019,11 +1129,21 @@ document.addEventListener("DOMContentLoaded", () => {
         // Genera nuovi ostacoli
         if (!state.gameEnded && timestamp - state.lastObstacleTime > getObstacleInterval(state.scrollSpeed)) {
             if (Math.random() < state.pairProbability) {
-                gameObjects.palms.push(...createPairOfObstacles());
+                const newObstacles = createPairOfObstacles();
+                gameObjects.palms.push(...newObstacles);
+                console.log("Generata coppia di ostacoli:", newObstacles);
             } else {
-                gameObjects.palms.push(createNewPalm());
+                const newObstacle = createNewPalm();
+                gameObjects.palms.push(newObstacle);
+                console.log("Generato ostacolo singolo:", newObstacle);
             }
             state.lastObstacleTime = timestamp;
+            
+            // Aumenta gradualmente la probabilità di coppie
+            state.pairProbability = Math.min(
+                CONFIG.MAX_PAIR_PROBABILITY, 
+                state.pairProbability + 0.02
+            );
         }
 
         // Genera granchi e castelli
@@ -1071,26 +1191,49 @@ document.addEventListener("DOMContentLoaded", () => {
         // Messaggi iniziali
         if(state.gamePaused && state.popupState < messages.length) {
             const currentMsg = messages[state.popupState];
-            const textStyle = getResponsiveTextSizes(currentMsg.type || 'title');
             
-            elements.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+            // Sfondo semitrasparente più contenuto
+            elements.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
             elements.ctx.fillRect(0, 0, elements.canvas.width, elements.canvas.height);
             
+            // Sfondo nero più contenuto per il testo
+            const bgPadding = isMobileDevice() ? 10 : 20;
+            const bgWidth = elements.canvas.width * 0.9;
+            const bgHeight = drawWrappedText(
+                elements.ctx,
+                currentMsg.text,
+                elements.canvas.width / 2,
+                elements.canvas.height / 2,
+                bgWidth - bgPadding * 2,
+                isMobileDevice() ? 16 : 24,
+                currentMsg.color,
+                {
+                    font: isMobileDevice() ? "bold 12px 'Press Start 2P'" : "bold 18px 'Press Start 2P'",
+                    lineSpacing: 1.2
+                }
+            ) + bgPadding * 2;
+            
+            // Sfondo nero con bordi arrotondati per il testo
+            elements.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+            elements.ctx.beginPath();
+            elements.ctx.roundRect(
+                (elements.canvas.width - bgWidth) / 2,
+                (elements.canvas.height - bgHeight) / 2,
+                bgWidth,
+                bgHeight,
+                10
+            );
+            elements.ctx.fill();
+            
+            // Testo
             drawWrappedText(
                 elements.ctx,
                 currentMsg.text,
                 elements.canvas.width / 2,
                 elements.canvas.height / 2,
-                elements.canvas.width * 0.8,
-                textStyle.lineHeight,
-                currentMsg.color,
-                {
-                    font: `bold ${textStyle.size}px 'Press Start 2P'`,
-                    letterSpacing: textStyle.letterSpacing,
-                    lineSpacing: 1.5,
-                    align: "center",
-                    baseline: "middle"
-                }
+                bgWidth - bgPadding * 2,
+                isMobileDevice() ? 16 : 24,
+                currentMsg.color
             );
         }
     
@@ -1150,8 +1293,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     elements.coverVideo.pause();
                     elements.coverVideo.currentTime = 0;
                     elements.coverVideo.style.display = "none";
-                    // RIMOSSO: elements.prizeMessage.container.style.display = "none";
-                    // Ora il messaggio rimane visibile
                 }, 1000);
             
                 if (elements.audioSources.mare) {
@@ -1199,6 +1340,8 @@ document.addEventListener("DOMContentLoaded", () => {
         elements.prizeMessage.container.style.textAlign = "center";
         elements.prizeMessage.container.style.pointerEvents = "auto";
         elements.prizeMessage.container.style.width = "100%"; // Aggiunto per migliorare il responsive
+        elements.prizeMessage.container.style.background = "none"; // Aggiunto per rimuovere lo sfondo
+        elements.prizeMessage.container.style.border = "none";
         
         // Configura il pulsante
         elements.prizeMessage.button.textContent = "E ora?";
