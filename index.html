@@ -2,23 +2,34 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>FortunaDino</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style>
+        body { 
+            margin: 0;
+            background-color: #000; 
+            overflow: hidden; /* Previene scrollbar */
+        }
+        #gameContainer { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+        }
+    </style>
 </head>
 <body>
     <!-- Contenitore del canvas -->
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
     </div>
-
     <!-- Pulsante di salto per dispositivi mobili -->
     <button id="jumpButton">Salta</button>
-
     <!-- Messaggio per desktop -->
     <div id="desktopMessage">Salto = Barra Spaziatrice</div>
-
     <!-- Script del gioco -->
     <script src="game.js"></script>
 </body>
