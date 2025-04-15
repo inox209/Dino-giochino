@@ -953,7 +953,18 @@ document.addEventListener("DOMContentLoaded", () => {
                      gameObjects.gtr1.width, gameObjects.gtr1.height);
         }    
 
-        drawPixelText(ctx, `Punteggio: ${state.score}`, scaleValue(150), scaleValue(30, false), "title");
+        const scoreText = `Punteggio: ${state.score}`;
+        const scoreX = isMobileDevice() ? elements.canvas.width * 0.3 : scaleValue(150);
+        const scoreY = isMobileDevice() ? scaleValue(20, false) : scaleValue(30, false);
+        const scoreFontSize = isMobileDevice() ? 10 : 18;
+        
+        ctx.save();
+        ctx.font = `bold ${scoreFontSize}px 'Press Start 2P'`;
+        ctx.fillStyle = "white";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillText(scoreText, scoreX, scoreY);
+        ctx.restore();
         if(state.gamePaused && state.popupState < messages.length) {
             const currentMsg = messages[state.popupState];
             
@@ -1190,28 +1201,39 @@ document.addEventListener("DOMContentLoaded", () => {
         // Messaggi iniziali
         if(state.gamePaused && state.popupState < messages.length) {
             const currentMsg = messages[state.popupState];
-                
-            // Sfondo semitrasparente che copre tutto il canvas
+            
+            // Sfondo semitrasparente fullscreen
             elements.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
             elements.ctx.fillRect(0, 0, elements.canvas.width, elements.canvas.height);
-        
-            // Testo - DIMENSIONI RIDOTTE PER MOBILE
-            const fontSize = isMobileDevice() ? 10 : 18;
-            const lineHeight = isMobileDevice() ? 16 : 24;
-                
-            drawWrappedText(
-                elements.ctx,
-                currentMsg.text,
-                elements.canvas.width / 2,
-                elements.canvas.height / 2,
-                elements.canvas.width * 0.9,
-                lineHeight,
-                currentMsg.color,
-                {
-                    font: `bold ${fontSize}px 'Press Start 2P'`,
-                    lineSpacing: 1.2
-                }
+    
+            // Reset proprietà di rendering per testo nitido
+            elements.ctx.font = `bold ${isMobileDevice() ? 10 : 18}px 'Press Start 2P'`;
+            elements.ctx.textAlign = "center";
+            elements.ctx.textBaseline = "middle";
+            elements.ctx.fillStyle = currentMsg.color;
+            
+            // Clear del testo precedente
+            const textHeight = 20 * (currentMsg.text.split('\n').length || 1);
+            elements.ctx.clearRect(
+                elements.canvas.width/2 - elements.canvas.width*0.45,
+                elements.canvas.height/2 - textHeight/2,
+                elements.canvas.width*0.9,
+                textHeight
             );
+    
+            // Disegna testo (versione mobile semplificata)
+            if(isMobileDevice()) {
+                const lines = currentMsg.text.split('\n');
+                const lineHeight = 14;
+                const startY = elements.canvas.height/2 - (lines.length-1)*lineHeight/2;
+                
+                lines.forEach((line, i) => {
+                    elements.ctx.fillText(line, elements.canvas.width/2, startY + i*lineHeight);
+                });
+            } else {
+                drawWrappedText(elements.ctx, currentMsg.text, elements.canvas.width/2, 
+                               elements.canvas.height/2, elements.canvas.width*0.9, 24, currentMsg.color);
+            }
         }
     
         // Maschera a cuore
@@ -1355,10 +1377,12 @@ document.addEventListener("DOMContentLoaded", () => {
         document.body.appendChild(elements.prizeMessage.container);
 
         if(isMobileDevice()) {
-            elements.prizeMessage.container.style.top = "60%";
+            elements.prizeMessage.container.style.top = "75%";
+            elements.prizeMessage.container.style.padding = "10px";
             elements.prizeMessage.button.style.fontSize = "10px";
             elements.prizeMessage.button.style.padding = "6px 12px";
             elements.prizeMessage.text.style.fontSize = "10px";
+            elements.prizeMessage.text.style.lineHeight = "1.4";
             elements.prizeMessage.text.style.marginBottom = "10px";
         }
     }
@@ -1566,6 +1590,15 @@ document.addEventListener("DOMContentLoaded", () => {
         elements.canvas.style.imageRendering = 'pixelated';
         elements.canvas.style.imageRendering = 'crisp-edges';
         elements.ctx.imageSmoothingEnabled = false;
+        // Aggiungi queste proprietà ANTIALIASING
+        elements.canvas.style.imageRendering = 'pixelated';
+        elements.ctx.imageSmoothingEnabled = false;
+    
+        // Forza dimensioni intere per canvas
+        const dpr = window.devicePixelRatio || 1;
+        elements.canvas.width = Math.floor(elements.canvas.clientWidth * dpr);
+        elements.canvas.height = Math.floor(elements.canvas.clientHeight * dpr);
+        elements.ctx.scale(dpr, dpr);        
         
         // Forza il ridimensionamento iniziale su mobile
         if (isMobileDevice()) {
