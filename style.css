@@ -1,38 +1,33 @@
-/* Stili generali */
+/* ========== STILI GENERALI ========== */
 body {
     margin: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
     height: 100vh;
-    background-color: #000000;
+    background-color: #000;
     overflow: hidden;
-    font-family: 'Press Start 2P', Arial, sans-serif; /* Font principale */
+    font-family: 'Press Start 2P', Arial, sans-serif;
 }
 
-/* Canvas del gioco */
+/* ========== GAME CONTAINER & CANVAS ========== */
+#gameContainer {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+}
+
 #gameCanvas {
     display: block;
-    margin: 0 auto;
     position: absolute;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
     max-width: 100%;
     max-height: 100%;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: pixelated;
 }
 
-/* Contenitore del canvas */
-#gameContainer {
-    width: 100%;
-    height: 100vh;
-    position: relative;
-}
-
-/* Pulsante "Salta" */
+/* ========== UI CONTROLLI ========== */
 #jumpButton {
-    display: none; /* Inizialmente nascosto */
     position: fixed;
     bottom: 10%;
     left: 50%;
@@ -41,48 +36,93 @@ body {
     height: 60px;
     font-size: 24px;
     background-color: #00ffff;
-    color: black;
+    color: #000;
     border: none;
     border-radius: 10px;
     cursor: pointer;
     z-index: 1000;
     box-shadow: 0 4px 10px rgba(255, 255, 255, 0.2);
+    display: none; /* Gestito da JS/media queries */
+    touch-action: manipulation;
 }
 
-/* Messaggio per desktop */
 #desktopMessage {
-    display: none; /* Inizialmente nascosto */
     position: fixed;
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
     font-size: 20px;
-    color: #ffffff;
+    color: #fff;
     z-index: 1000;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    display: none; /* Gestito da JS/media queries */
 }
 
-/* Media query per dispositivi mobili */
-@media only screen and (max-width: 768px) {
+/* ========== MESSAGGI/POPUP ========== */
+.prize-message-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 600px;
+    background-color: rgba(0, 0, 0, 0.85);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    z-index: 1001;
+    display: none;
+}
+
+.prize-message-container a {
+    color: #00ffff;
+    font-size: 18px;
+    padding: 12px 24px;
+    border: 2px solid #00ffff;
+    border-radius: 5px;
+    margin-top: 20px;
+    transition: all 0.3s;
+    display: inline-block; /* Migliora clickability */
+}
+
+.prize-message-container a:hover {
+    background-color: #00ffff;
+    color: #000;
+}
+
+/* ========== MEDIA QUERIES ========== */
+@media (max-width: 768px) {
     #jumpButton {
-        display: block; /* Mostra il pulsante "Salta" su mobile */
+        display: block; /* Mostra solo su mobile */
+        width: 120px; /* Più compatto per mobile */
+        height: 50px;
+        font-size: 18px;
+        bottom: 5%;
     }
 
-    #desktopMessage {
-        display: none; /* Nascondi il messaggio per desktop su mobile */
+    #gameCanvas {
+        max-height: 90vh !important;
+    }
+
+    .prize-message-container {
+        top: 65% !important;
+        width: 95% !important;
+        padding: 15px;
+    }
+
+    .prize-message-container a {
+        font-size: 14px;
+        padding: 10px 15px;
     }
 }
 
-/* Media query per desktop */
-@media only screen and (min-width: 769px) {
-    #jumpButton {
-        display: none; /* Nascondi il pulsante "Salta" su desktop */
-    }
-
+@media (min-width: 769px) {
     #desktopMessage {
-        display: block; /* Mostra il messaggio per desktop */
+        display: block; /* Mostra solo su desktop */
     }
+}
 
-    .hidden {
-        display: none !important;
-    }
+/* Classi utility */
+.hidden {
+    display: none !important;
 }
