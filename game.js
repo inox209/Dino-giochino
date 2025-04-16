@@ -732,53 +732,37 @@ document.addEventListener("DOMContentLoaded", () => {
     function resizeCanvas() {
         const isMobile = isMobileDevice();
         const targetRatio = CONFIG.REFERENCE_WIDTH / CONFIG.REFERENCE_HEIGHT;
-        const windowRatio = window.innerWidth / window.innerHeight;
-        let canvasWidth, canvasHeight;
+        
+        // Dimensioni massime disponibili
+        const maxWidth = isMobile ? window.innerWidth : window.innerWidth * 0.9;
+        const maxHeight = isMobile ? window.innerHeight : window.innerHeight * 0.9;
+        
+        // Calcola dimensioni mantenendo l'aspect ratio
+        let canvasWidth = maxWidth;
+        let canvasHeight = canvasWidth / targetRatio;
     
-        if (isMobile) {
-            // Modalità mobile - adatta sia a portrait che landscape
-            if (windowRatio > targetRatio) {
-                // Schermo più largo del gioco (landscape)
-                canvasHeight = window.innerHeight;
-                canvasWidth = canvasHeight * targetRatio;
-            } else {
-                // Schermo più stretto del gioco (portrait)
-                canvasWidth = window.innerWidth;
-                canvasHeight = canvasWidth / targetRatio;
-            }
-        } else {
-            // Modalità desktop - mantieni la tua logica originale
-            const maxWidth = window.innerWidth * 0.9;
-            const maxHeight = window.innerHeight * 0.9;
-            canvasWidth = maxWidth;
-            canvasHeight = canvasWidth / targetRatio;
-    
-            if (canvasHeight > maxHeight) {
-                canvasHeight = maxHeight;
-                canvasWidth = canvasHeight * targetRatio;
-            }
+        if (canvasHeight > maxHeight) {
+            canvasHeight = maxHeight;
+            canvasWidth = canvasHeight * targetRatio;
         }
     
-        // Applica dimensioni con valori interi (evita sub-pixel rendering)
+        // Applica dimensioni (arrotondate per evitare sub-pixel)
         elements.canvas.width = Math.floor(canvasWidth);
         elements.canvas.height = Math.floor(canvasHeight);
         
-        // Stili CSS per il canvas
-        elements.canvas.style.width = `${elements.canvas.width}px`;
-        elements.canvas.style.height = `${elements.canvas.height}px`;
+        // Stili CSS
+        elements.canvas.style.width = `${canvasWidth}px`;
+        elements.canvas.style.height = `${canvasHeight}px`;
+        
+        // Centra il canvas
         elements.canvas.style.position = 'absolute';
         elements.canvas.style.left = '50%';
         elements.canvas.style.top = '50%';
         elements.canvas.style.transform = 'translate(-50%, -50%)';
     
-        // Aggiorna posizioni degli elementi di gioco
+        // Aggiorna posizioni elementi
         gameObjects.dino.y = elements.canvas.height * 0.65;
-        gameObjects.dina.y = elements.canvas.height * 0.65;
-        
-        // Aggiorna tutte le dimensioni scalate
         refreshAllSizes();
-        
-        console.log(`Canvas resized to: ${elements.canvas.width}x${elements.canvas.height} (Ratio: ${elements.canvas.width/elements.canvas.height})`);
     }
 
     function getObstacleInterval(scrollSpeed) {
