@@ -21,6 +21,8 @@ body {
     -webkit-font-smoothing: none;
     max-height: 100vh;
     max-width: 100vw;
+    background-color: #000;
+    object-fit: contain;
 }
 
 /* ========== MOBILE BUTTON ========== */
