@@ -1617,12 +1617,12 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
-        elements.canvas.style.imageRendering = '-webkit-optimize-contrast';
-        elements.canvas.style.imageRendering = 'pixelated';
-        elements.canvas.style.imageRendering = 'crisp-edges';
+        //elements.canvas.style.imageRendering = '-webkit-optimize-contrast';
+        //elements.canvas.style.imageRendering = 'pixelated';
+        //elements.canvas.style.imageRendering = 'crisp-edges';
         elements.ctx.imageSmoothingEnabled = false;
         // Aggiungi queste proprietà ANTIALIASING
-        elements.canvas.style.imageRendering = 'pixelated';
+        //elements.canvas.style.imageRendering = 'pixelated';
         elements.ctx.imageSmoothingEnabled = false;
         // Forza dimensioni intere per canvas
         const dpr = window.devicePixelRatio || 1;
