@@ -29,7 +29,8 @@ body {
 #jumpButton {
     position: fixed;
     bottom: 20px;
-    right: 20px;
+    left: 50%;
+    transform: translateX(-50%);
     padding: 12px 24px;
     background: rgba(0, 255, 255, 0.7);
     color: #000;
@@ -38,16 +39,20 @@ body {
     font-family: 'Press Start 2P', cursive;
     font-size: 14px;
     z-index: 1000;
-    display: none;
+    display: block; /* Cambiato da none a block */
+    width: 80%;
+    max-width: 300px;
+    margin: 0 auto;
+    touch-action: manipulation;
 }
 
 /* ========== MEDIA QUERIES ========== */
 @media (max-width: 768px), (hover: none) {
     #gameCanvas {
-        width: auto !important;
-        height: auto !important;
-        max-width: none !important;
-        max-height: none !important;
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
     }
 
     body {
@@ -55,14 +60,8 @@ body {
         position: fixed;
     }
     
-    #jumpButton {
-        left: 50% !important;
-        right: auto !important;
-        transform: translateX(-50%) !important;
-        bottom: 20px !important;
-        width: 80% !important;
-        max-width: 300px !important;
-        margin: 0 auto !important;
+    #desktopMessage {
+        display: none;
     }
     
     .prize-message-container {
