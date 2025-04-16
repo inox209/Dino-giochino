@@ -278,7 +278,7 @@ document.addEventListener("DOMContentLoaded", () => {
             entrySpeed: 2,
             moveSpeed: 2,
             x: elements.canvas.width + scaleValue(200),
-            y: isMobileDevice() ? scaleValue(200, false) : scaleValue(250, false),
+            y: isMobileDevice() ? elements.canvas.height * 0.55 : elements.canvas.height * 0.65,
             visible: false,
             state: "hidden"
         },
@@ -357,50 +357,34 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, color, options = {}) {
-        const isMobile = isMobileDevice();
-        const baseSize = isMobile ? 12 : 18; // Dimensione base più piccola per mobile
-        const mobileLineHeight = baseSize * 1.5;
+    function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, color) {
+        elements.ctx.save();
+        elements.ctx.font = `bold ${isMobileDevice() ? 12 : 16}px 'Press Start 2P'`;
+        elements.ctx.fillStyle = color;
+        elements.ctx.textAlign = "center";
         
-        ctx.save();
-        ctx.font = `bold ${baseSize}px 'Press Start 2P'`;
-        ctx.fillStyle = color;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-    
-        // Calcolo delle linee con spazio ridotto
         const words = text.split(' ');
-        let lines = [];
-        let currentLine = '';
-    
-        words.forEach(word => {
-            const testLine = currentLine ? `${currentLine} ${word}` : word;
-            const metrics = ctx.measureText(testLine);
-            
-            if (metrics.width > maxWidth * 0.9) { // 90% della larghezza disponibile
-                lines.push(currentLine);
-                currentLine = word;
+        let line = '';
+        let testLine;
+        let metrics;
+        const lines = [];
+        
+        for (let i = 0; i < words.length; i++) {
+            testLine = line + words[i] + ' ';
+            metrics = elements.ctx.measureText(testLine);
+            if (metrics.width > maxWidth && i > 0) {
+                lines.push(line);
+                line = words[i] + ' ';
             } else {
-                currentLine = testLine;
+                line = testLine;
             }
-        });
-        if (currentLine) lines.push(currentLine);
-    
-        // Riduci ulteriormente se ci sono troppe linee
-        if (isMobile && lines.length > 3) {
-            ctx.font = `bold ${baseSize - 2}px 'Press Start 2P'`;
-            lines = []; // Ricalcola con font più piccolo
-            // ... (ripeti il calcolo delle linee)
         }
-    
-        // Disegna le linee centrate
-        const startY = y - ((lines.length - 1) * mobileLineHeight) / 2;
-        lines.forEach((line, i) => {
-            ctx.fillText(line, x, startY + (i * mobileLineHeight));
-        });
-    
-        ctx.restore();
-        return lines.length * mobileLineHeight;
+        lines.push(line);
+        
+        for (let i = 0; i < lines.length; i++) {
+            elements.ctx.fillText(lines[i].trim(), x, y + (i * lineHeight));
+        }
+        elements.ctx.restore();
     }
 
     function refreshAllSizes() {
@@ -695,6 +679,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (state.popupState >= messages.length) {
                     startGame();
                 }
+                draw(); // Chiama draw() senza parametri
                 
                 // Avvia l'audio mare al primo input
                 if (state.popupState === 1 && !elements.audioSources.mare) {
@@ -761,7 +746,7 @@ document.addEventListener("DOMContentLoaded", () => {
         elements.canvas.style.transform = 'translate(-50%, -50%)';
     
         // Aggiorna posizioni elementi
-        gameObjects.dino.y = elements.canvas.height * 0.65;
+        gameObjects.dino.y = elements.canvas.height * (isMobileDevice() ? 0.6 : 0.65);
         refreshAllSizes();
     }
 
@@ -798,8 +783,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const type2 = Math.random() < 0.5 ? "palm" : "umbrella";
         const config1 = CONFIG.OBSTACLE_PHYSICS[type1];
         const config2 = CONFIG.OBSTACLE_PHYSICS[type2];
-    
-        const baseY = elements.canvas.height - scaleValue(50, false);
+        const baseY = elements.canvas.height - scaleValue(50, false) + (isMobileDevice() ? scaleValue(20, false) : 0);
         
         return [
             {
@@ -850,18 +834,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const fontSize = isMobileDevice() ? config.mobile : config.desktop;
         
         // Stile del testo
-        ctx.save();
-        ctx.font = `bold ${fontSize}px 'Press Start 2P', monospace`;
-        ctx.fillStyle = options.color || "white";
-        ctx.textAlign = options.align || "center";
-        ctx.textBaseline = options.baseline || "middle";
+        elements.ctx.save();
+        elements.ctx.font = `bold ${fontSize}px 'Press Start 2P', monospace`;
+        elements.ctx.fillStyle = options.color || "white";
+        elements.ctx.textAlign = options.align || "center";
+        elements.ctx.textBaseline = options.baseline || "middle";
         
         // Posizionamento speciale per mobile
         const adjustedX = isMobileDevice() ? x * 0.8 : x; // Riduci l'offset X su mobile
         const adjustedY = isMobileDevice() ? y * 1.2 : y; // Aumenta l'offset Y su mobile
         
-        ctx.fillText(text, adjustedX, adjustedY);
-        ctx.restore();
+        elements.ctx.fillText(text, adjustedX, adjustedY);
+        elements.ctx.restore();
     }
 
     function drawHeartMask(ctx, progress) {
@@ -894,11 +878,11 @@ document.addEventListener("DOMContentLoaded", () => {
         tempCtx.closePath();
         tempCtx.fill();
 
-        ctx.drawImage(tempCanvas, 0, 0);
+        elements.ctx.drawImage(tempCanvas, 0, 0);
     }
 
     function drawImage(ctx, img, x, y, width, height) {
-        ctx.drawImage(img, x, y, width, height);
+        elements.ctx.drawImage(img, x, y, width, height);
     }
 
     function getRelativeSize(percent, isWidth = true) {
@@ -909,21 +893,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function drawGameElements(ctx) {
         // 1. Disegna lo sfondo
-        ctx.save();
-        ctx.drawImage(
-            elements.images.sfondo,
-            0, 0, elements.images.sfondo.width, elements.images.sfondo.height,
-            0, 0, elements.canvas.width, elements.canvas.height
-        );
-        ctx.restore();
+        elements.ctx.save();
+        elements.ctx.drawImage(elements.images.sfondo, 0, 0, elements.images.sfondo.width, elements.images.sfondo.height, 0, 0, elements.canvas.width, elements.canvas.height);
+        elements.ctx.restore();
 
         // 2. Disegna gli ostacoli
         gameObjects.palms.forEach((obstacle) => {
             if (obstacle.type === "palm") {
-                drawImage(ctx, elements.images.palm, obstacle.x, obstacle.y, 
+                drawImage(elements.ctx, elements.images.palm, obstacle.x, obstacle.y, 
                           obstacle.width, obstacle.graphicHeight);
             } else if (obstacle.type === "umbrella") {
-                drawImage(ctx, elements.images.umbrella, obstacle.x, obstacle.y, 
+                drawImage(elements.ctx, elements.images.umbrella, obstacle.x, obstacle.y, 
                           obstacle.width, obstacle.graphicHeight);
             }
         });
@@ -941,29 +921,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // 3. Disegna il granchio
         if (gameObjects.granchio.visible) {
-            drawImage(ctx, elements.images.granchio, gameObjects.granchio.x, gameObjects.granchio.y, 
+            drawImage(elements.ctx, elements.images.granchio, gameObjects.granchio.x, gameObjects.granchio.y, 
                       gameObjects.granchio.width, gameObjects.granchio.height);
         }
 
         // 4. Disegna il castello
         if (gameObjects.castello.visible) {
-            drawImage(ctx, elements.images.castello, gameObjects.castello.x, gameObjects.castello.y, 
+            drawImage(elements.ctx, elements.images.castello, gameObjects.castello.x, gameObjects.castello.y, 
                       gameObjects.castello.width, gameObjects.castello.height);
         }
         
         // 5. Disegna il dinosauro
-        drawImage(ctx, elements.images.dino, gameObjects.dino.x, gameObjects.dino.y, 
+        drawImage(elements.ctx, elements.images.dino, gameObjects.dino.x, gameObjects.dino.y, 
                   gameObjects.dino.width, gameObjects.dino.height);
 
         // 6. Disegna Dina e gtr1
         if (gameObjects.dina.visible) {
             // Dina
-            drawImage(ctx, elements.images.dina, 
+            drawImage(elements.ctx, elements.images.dina, 
                      gameObjects.dina.x, gameObjects.dina.y,
                      gameObjects.dina.width, gameObjects.dina.height);
             
             // gtr1 (posizione relativa a Dina)
-            drawImage(ctx, elements.images.gtr1,
+            drawImage(elements.ctx, elements.images.gtr1,
                      gameObjects.dina.x + gameObjects.gtr1.offsetX,
                      gameObjects.dina.y + gameObjects.gtr1.offsetY,
                      gameObjects.gtr1.width, gameObjects.gtr1.height);
@@ -973,18 +953,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const scoreY = elements.canvas.height * 0.05;
         const scoreSize = Math.min(elements.canvas.width, elements.canvas.height) * 0.04;
         
-        ctx.save();
-        ctx.font = `bold ${scoreSize}px 'Press Start 2P'`;
-        ctx.fillStyle = "white";
-        ctx.textAlign = "left";
-        ctx.textBaseline = "top";
-        ctx.fillText(`Punteggio: ${state.score}`, scoreX, scoreY);
-        ctx.restore();
+        elements.ctx.save();
+        elements.ctx.font = `bold ${scoreSize}px 'Press Start 2P'`;
+        elements.ctx.fillStyle = "white";
+        elements.ctx.textAlign = "left";
+        elements.ctx.textBaseline = "top";
+        elements.ctx.fillText(`Punteggio: ${state.score}`, scoreX, scoreY);
+        elements.ctx.restore();
         if(state.gamePaused && state.popupState < messages.length) {
             const currentMsg = messages[state.popupState];
             
             // Sfondo semitrasparente
-            ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+            elements.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
             const textWidth = elements.ctx.measureText(currentMsg.text).width;
 
             // Testo
@@ -1208,44 +1188,55 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function draw() {
+        if (!elements.ctx) {
+            elements.ctx = elements.canvas.getContext('2d');
+            if (!elements.ctx) {
+                console.error("Impossibile ottenere il contesto del canvas");
+                return;
+            }
+        }
+        
         elements.ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
-        drawGameElements(elements.ctx);
+        drawGameElements();
         // Messaggi iniziali
         if(state.gamePaused && state.popupState < messages.length) {
             const currentMsg = messages[state.popupState];
-            
+    
             // Sfondo semitrasparente fullscreen
-            elements.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+            elements.ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
             elements.ctx.fillRect(0, 0, elements.canvas.width, elements.canvas.height);
     
-            // Reset proprietà di rendering per testo nitido
-            elements.ctx.font = `bold ${isMobileDevice() ? 10 : 18}px 'Press Start 2P'`;
-            elements.ctx.textAlign = "center";
-            elements.ctx.textBaseline = "middle";
-            elements.ctx.fillStyle = currentMsg.color;
-            
-            // Clear del testo precedente
-            const textHeight = 20 * (currentMsg.text.split('\n').length || 1);
-            elements.ctx.clearRect(
-                elements.canvas.width/2 - elements.canvas.width*0.45,
-                elements.canvas.height/2 - textHeight/2,
-                elements.canvas.width*0.9,
-                textHeight
-            );
+            // Testo con wrap automatico (mobile-specific)
+            const fontSize = isMobileDevice() ? 12 : 18;
+            const lineHeight = fontSize * 1.4;
+            const maxWidth = elements.canvas.width * 0.9;
     
-            // Disegna testo (versione mobile semplificata)
-            if(isMobileDevice()) {
-                const lines = currentMsg.text.split('\n');
-                const lineHeight = 14;
-                const startY = elements.canvas.height/2 - (lines.length-1)*lineHeight/2;
-                
-                lines.forEach((line, i) => {
-                    elements.ctx.fillText(line, elements.canvas.width/2, startY + i*lineHeight);
-                });
-            } else {
-                drawWrappedText(elements.ctx, currentMsg.text, elements.canvas.width/2, 
-                    elements.canvas.height/2, elements.canvas.width*0.9, 24, currentMsg.color);
+            elements.ctx.font = `bold ${fontSize}px 'Press Start 2P'`;
+            elements.ctx.fillStyle = "white";
+            elements.ctx.textAlign = "center";
+    
+            const lines = [];
+            const words = currentMsg.text.split(' ');
+            let currentLine = words[0];
+    
+            for (let i = 1; i < words.length; i++) {
+                const testLine = currentLine + ' ' + words[i];
+                const metrics = elements.ctx.measureText(testLine);
+                if (metrics.width < maxWidth) {
+                    currentLine = testLine;
+                } else {
+                    lines.push(currentLine);
+                    currentLine = words[i];
+                }
             }
+            lines.push(currentLine);
+    
+            // Posizionamento verticale
+            const startY = elements.canvas.height / 2 - (lines.length * lineHeight) / 2;
+    
+            lines.forEach((line, i) => {
+                elements.ctx.fillText(line, elements.canvas.width / 2, startY + (i * lineHeight));
+            });
         }
     
         // Maschera a cuore
@@ -1340,9 +1331,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Configura il contenitore del messaggio
         elements.prizeMessage.container.style.position = "fixed";
-        elements.prizeMessage.container.style.top = "65%";
+        elements.prizeMessage.container.style.top = "auto";
+        elements.prizeMessage.container.style.bottom = "20px";
         elements.prizeMessage.container.style.left = "50%";
-        elements.prizeMessage.container.style.transform = "translate(-50%, -50%)";
+        elements.prizeMessage.container.style.transform = "translateX(-50%)";
         elements.prizeMessage.container.style.display = "none";
         elements.prizeMessage.container.style.flexDirection = "column";
         elements.prizeMessage.container.style.alignItems = "center";
@@ -1350,8 +1342,8 @@ document.addEventListener("DOMContentLoaded", () => {
         elements.prizeMessage.container.style.zIndex = "1000";
         elements.prizeMessage.container.style.textAlign = "center";
         elements.prizeMessage.container.style.pointerEvents = "auto";
-        elements.prizeMessage.container.style.width = "100%"; // Aggiunto per migliorare il responsive
-        elements.prizeMessage.container.style.background = "none"; // Aggiunto per rimuovere lo sfondo
+        elements.prizeMessage.container.style.width = "100%";
+        elements.prizeMessage.container.style.background = "none";
         elements.prizeMessage.container.style.border = "none";
         
         // Configura il pulsante
@@ -1368,7 +1360,8 @@ document.addEventListener("DOMContentLoaded", () => {
         elements.prizeMessage.button.style.cursor = "pointer";
         elements.prizeMessage.button.style.transition = "all 0.3s";
         elements.prizeMessage.button.style.textShadow = "1px 1px 2px rgba(0, 0, 0, 0.8)"; // Aggiunto ombreggiatura
-        elements.prizeMessage.button.style.backgroundColor = "rgba(0, 0, 0, 0.5)"; // Sfondo semi-trasparente
+        elements.prizeMessage.button.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+        elements.prizeMessage.button.style.margin = "0 auto";
         
         // Effetto hover per il pulsante
         elements.prizeMessage.button.addEventListener("mouseenter", () => {
@@ -1401,10 +1394,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     function gameLoop(timestamp) {
         // Modifica questa funzione così:
-        if (!state.startTime) {
-            state.startTime = timestamp;
-        }
-
+        if (!state.startTime) state.startTime = timestamp;
         // Esegui sempre update e draw, ma controlla gamePaused in update
         update(timestamp);
         draw();
@@ -1549,6 +1539,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // 9. INIZIALIZZAZIONE
     // =============================================
     function init() {
+        elements.ctx = elements.canvas.getContext('2d');
+        if (!elements.ctx) {
+            alert("Errore: Impossibile inizializzare il contesto del canvas");
+            return;
+        }
         if (isMobileDevice()) {
             document.head.insertAdjacentHTML('beforeend', `
                 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
@@ -1559,11 +1554,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 window.scrollTo(0, 0);
             }, 100);
         }
-        if (isMobileDevice()) {
-            const viewportMeta = document.createElement('meta');
-            viewportMeta.name = 'viewport';
-            viewportMeta.content = 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no';
-            document.head.appendChild(viewportMeta);
+        if(isMobileDevice()) {
+            // Forza ridisegno completo al cambio orientamento
+            window.addEventListener('resize', () => {
+                setTimeout(() => {
+                    resizeCanvas();
+                    draw();
+                }, 100);
+            });
         }
         // Inizializza canvas e risorse
         resizeCanvas();
