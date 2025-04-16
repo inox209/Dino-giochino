@@ -726,6 +726,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function resizeCanvas() {
+        if (isMobileDevice()) {
+            const mobileScale = Math.min(
+                window.innerWidth / CONFIG.REFERENCE_WIDTH,
+                window.innerHeight / CONFIG.REFERENCE_HEIGHT
+            ) * 0.9;
+            
+            elements.canvas.width = CONFIG.REFERENCE_WIDTH * mobileScale;
+            elements.canvas.height = CONFIG.REFERENCE_HEIGHT * mobileScale;
+            return;
+        }
         const isMobile = isMobileDevice();
         const maxWidth = window.innerWidth * (isMobile ? 0.95 : 0.9);
         const maxHeight = window.innerHeight * (isMobile ? 0.95 : 0.9);
@@ -897,9 +907,25 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.drawImage(img, x, y, width, height);
     }
 
+    function getRelativeSize(percent, isWidth = true) {
+        return isWidth 
+            ? elements.canvas.width * (percent / 100)
+            : elements.canvas.height * (percent / 100);
+    }
+
     function drawGameElements(ctx) {
         // 1. Disegna lo sfondo
-        ctx.drawImage(elements.images.sfondo, 0, 0, elements.canvas.width, elements.canvas.height);
+        ctx.drawImage(
+            elements.images.sfondo, 
+            0, 
+            0, 
+            elements.images.sfondo.width, 
+            elements.images.sfondo.height,
+            0,
+            0,
+            elements.canvas.width,
+            elements.canvas.height
+        );
 
         // 2. Disegna gli ostacoli
         gameObjects.palms.forEach((obstacle) => {
@@ -913,15 +939,15 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         // [DEBUG] 2.1 - Hitbox verticali proporzionali
-        gameObjects.palms.forEach((obstacle) => {
-            const physics = CONFIG.OBSTACLE_PHYSICS[obstacle.type];
-            const hitboxWidth = obstacle.width * physics.hitboxWidthRatio;
-            const hitboxX = obstacle.x + (obstacle.width / 2) - (hitboxWidth / 2);
-            const hitboxTop = obstacle.y + obstacle.graphicHeight - obstacle.collisionHeight;
+        //gameObjects.palms.forEach((obstacle) => {
+        //    const physics = CONFIG.OBSTACLE_PHYSICS[obstacle.type];
+        //    const hitboxWidth = obstacle.width * physics.hitboxWidthRatio;
+        //    const hitboxX = obstacle.x + (obstacle.width / 2) - (hitboxWidth / 2);
+        //    const hitboxTop = obstacle.y + obstacle.graphicHeight - obstacle.collisionHeight;
             
-            ctx.fillStyle = obstacle.type === "palm" ? "rgba(255, 0, 0, 0.3)" : "rgba(0, 0, 255, 0.3)";
-            ctx.fillRect(hitboxX, hitboxTop, hitboxWidth, obstacle.collisionHeight);
-        });
+        //   ctx.fillStyle = obstacle.type === "palm" ? "rgba(255, 0, 0, 0.3)" : "rgba(0, 0, 255, 0.3)";
+        //    ctx.fillRect(hitboxX, hitboxTop, hitboxWidth, obstacle.collisionHeight);
+       // });
 
         // 3. Disegna il granchio
         if (gameObjects.granchio.visible) {
@@ -954,10 +980,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }    
 
         const scoreText = `Punteggio: ${state.score}`;
-        const scoreX = isMobileDevice() ? elements.canvas.width * 0.3 : scaleValue(150);
-        const scoreY = isMobileDevice() ? scaleValue(20, false) : scaleValue(30, false);
-        const scoreFontSize = isMobileDevice() ? 10 : 18;
-        
+        const scoreX = elements.canvas.width * 0.05; // 5% dalla sinistra
+        const scoreY = elements.canvas.height * 0.05; // 5% dall'alto
+        const scoreFontSize = Math.min(
+            elements.canvas.width * 0.04, 
+            elements.canvas.height * 0.04
+        ); // 4% della dimensione minore
         ctx.save();
         ctx.font = `bold ${scoreFontSize}px 'Press Start 2P'`;
         ctx.fillStyle = "white";
@@ -1059,17 +1087,13 @@ document.addEventListener("DOMContentLoaded", () => {
             gameObjects.dino.y += gameObjects.dino.jumpSpeed;
             gameObjects.dino.jumpSpeed += gameObjects.dino.gravity;
             
-            if (isMobileDevice()) {
-                const currentHeight = scaleValue(250, false) - gameObjects.dino.y;
-                if (currentHeight > gameObjects.dino.maxJumpHeight) {
-                    gameObjects.dino.y = scaleValue(250, false) - gameObjects.dino.maxJumpHeight;
-                    gameObjects.dino.jumpSpeed = 0;
-                }
-            }
+            // Terra ferma (mobile)
+            const groundLevel = isMobileDevice() 
+                ? elements.canvas.height - gameObjects.dino.height - scaleValue(20, false)
+                : scaleValue(250, false);
             
-            // Atterraggio
-            if (gameObjects.dino.y >= scaleValue(250, false)) {
-                gameObjects.dino.y = scaleValue(250, false);
+            if (gameObjects.dino.y >= groundLevel) {
+                gameObjects.dino.y = groundLevel;
                 gameObjects.dino.isJumping = false;
             }
         }
@@ -1232,7 +1256,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             } else {
                 drawWrappedText(elements.ctx, currentMsg.text, elements.canvas.width/2, 
-                               elements.canvas.height/2, elements.canvas.width*0.9, 24, currentMsg.color);
+                    elements.canvas.height/2, elements.canvas.width*0.9, 24, currentMsg.color);
             }
         }
     
@@ -1537,6 +1561,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // 9. INIZIALIZZAZIONE
     // =============================================
     function init() {
+        if (isMobileDevice()) {
+            const viewportMeta = document.createElement('meta');
+            viewportMeta.name = 'viewport';
+            viewportMeta.content = 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no';
+            document.head.appendChild(viewportMeta);
+        }
         // Inizializza canvas e risorse
         resizeCanvas();
         initResources();
@@ -1593,13 +1623,11 @@ document.addEventListener("DOMContentLoaded", () => {
         // Aggiungi queste proprietà ANTIALIASING
         elements.canvas.style.imageRendering = 'pixelated';
         elements.ctx.imageSmoothingEnabled = false;
-    
         // Forza dimensioni intere per canvas
         const dpr = window.devicePixelRatio || 1;
         elements.canvas.width = Math.floor(elements.canvas.clientWidth * dpr);
         elements.canvas.height = Math.floor(elements.canvas.clientHeight * dpr);
         elements.ctx.scale(dpr, dpr);        
-        
         // Forza il ridimensionamento iniziale su mobile
         if (isMobileDevice()) {
             setTimeout(() => {
