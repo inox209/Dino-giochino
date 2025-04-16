@@ -1636,7 +1636,7 @@ document.addEventListener("DOMContentLoaded", () => {
         //elements.canvas.style.imageRendering = '-webkit-optimize-contrast';
         elements.canvas.style.imageRendering = 'pixelated';
         elements.canvas.style.imageRendering = 'crisp-edges';
-        elements.ctx.imageSmoothingEnabled = true;
+        elements.ctx.imageSmoothingEnabled = false;
         // Forza dimensioni intere per canvas
         const dpr = window.devicePixelRatio || 1;
         elements.canvas.width = Math.floor(elements.canvas.clientWidth * dpr);
