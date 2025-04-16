@@ -257,7 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const gameObjects = {
         dino: {
             x: scaleValue(100),
-            y: scaleValue(250, false),
+            y: isMobileDevice() ? elements.canvas.height * 0.7 : elements.canvas.height * 0.65,
             width: scaleValue(isMobileDevice() ? 180 : 150, true, { isDino: true }),
             height: scaleValue(isMobileDevice() ? 180 : 150, false, { isDino: true }),
             isJumping: false,
@@ -270,15 +270,15 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         
         dina: {
-            startX: elements.canvas.width + scaleValue(200), // Inizio FUORI dallo schermo
-            entryTargetX: elements.canvas.width - scaleValue(300), // Prima fermata (visibile)
-            finalTargetX: elements.canvas.width/2 + scaleValue(100), // Centro + offset
-            width: scaleValue(isMobileDevice() ? 150 : 320, true, { isDina: true }),
-            height: scaleValue(isMobileDevice() ? 150 : 320, false, { isDina: true }),
-            entrySpeed: 2,
+            startX: elements.canvas.width + scaleValue(200),
+            entryTargetX: elements.canvas.width - scaleValue(200),
+            finalTargetX: elements.canvas.width/2 + scaleValue(50),
+            width: scaleValue(isMobileDevice() ? 120 : 150, true, { isDina: true }),
+            height: scaleValue(isMobileDevice() ? 120 : 150, false, { isDina: true }),
+            entrySpeed: 3,
             moveSpeed: 2,
             x: elements.canvas.width + scaleValue(200),
-            y: isMobileDevice() ? elements.canvas.height * 0.55 : elements.canvas.height * 0.65,
+            y: isMobileDevice() ? elements.canvas.height * 0.7 : elements.canvas.height * 0.65,
             visible: false,
             state: "hidden"
         },
@@ -1199,44 +1199,46 @@ document.addEventListener("DOMContentLoaded", () => {
         elements.ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
         drawGameElements();
         // Messaggi iniziali
+
         if(state.gamePaused && state.popupState < messages.length) {
             const currentMsg = messages[state.popupState];
     
-            // Sfondo semitrasparente fullscreen
+            // Sfondo semitrasparente
             elements.ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
             elements.ctx.fillRect(0, 0, elements.canvas.width, elements.canvas.height);
     
-            // Testo con wrap automatico (mobile-specific)
-            const fontSize = isMobileDevice() ? 12 : 18;
+            // Stile del testo
+            const fontSize = isMobileDevice() ? 12 : 16;
             const lineHeight = fontSize * 1.4;
-            const maxWidth = elements.canvas.width * 0.9;
+            const maxWidth = elements.canvas.width * 0.8;
+            const x = elements.canvas.width / 2;
+            let y = elements.canvas.height / 3;
     
             elements.ctx.font = `bold ${fontSize}px 'Press Start 2P'`;
             elements.ctx.fillStyle = "white";
             elements.ctx.textAlign = "center";
     
-            const lines = [];
+            // Divide il testo in righe
             const words = currentMsg.text.split(' ');
-            let currentLine = words[0];
+            let line = '';
     
-            for (let i = 1; i < words.length; i++) {
-                const testLine = currentLine + ' ' + words[i];
+            for (let i = 0; i < words.length; i++) {
+                const testLine = line + words[i] + ' ';
                 const metrics = elements.ctx.measureText(testLine);
-                if (metrics.width < maxWidth) {
-                    currentLine = testLine;
+                if (metrics.width > maxWidth && i > 0) {
+                    elements.ctx.fillText(line.trim(), x, y);
+                    y += lineHeight;
+                    line = words[i] + ' ';
                 } else {
-                    lines.push(currentLine);
-                    currentLine = words[i];
+                    line = testLine;
                 }
             }
-            lines.push(currentLine);
+            elements.ctx.fillText(line.trim(), x, y);
     
-            // Posizionamento verticale
-            const startY = elements.canvas.height / 2 - (lines.length * lineHeight) / 2;
-    
-            lines.forEach((line, i) => {
-                elements.ctx.fillText(line, elements.canvas.width / 2, startY + (i * lineHeight));
-            });
+            // Aggiungi istruzioni per continuare
+            y += lineHeight * 2;
+            const continueText = isMobileDevice() ? "Tocca per continuare" : "Premi SPAZIO per continuare";
+            elements.ctx.fillText(continueText, x, y);
         }
     
         // Maschera a cuore
@@ -1543,6 +1545,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!elements.ctx) {
             alert("Errore: Impossibile inizializzare il contesto del canvas");
             return;
+        }
+        if (isMobileDevice()) {
+            elements.jumpButton.style.display = 'block';
         }
         if (isMobileDevice()) {
             document.head.insertAdjacentHTML('beforeend', `
