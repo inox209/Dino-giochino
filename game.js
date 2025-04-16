@@ -257,7 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const gameObjects = {
         dino: {
             x: scaleValue(100),
-            y: isMobileDevice() ? elements.canvas.height * 0.7 : elements.canvas.height * 0.65,
+            y: isMobileDevice() ? elements.canvas.height * 0.7 : elements.canvas.height * 0.7,
             width: scaleValue(isMobileDevice() ? 180 : 150, true, { isDino: true }),
             height: scaleValue(isMobileDevice() ? 180 : 150, false, { isDino: true }),
             isJumping: false,
@@ -714,9 +714,26 @@ document.addEventListener("DOMContentLoaded", () => {
         state.animationFrameId = requestAnimationFrame(gameLoop);
     }
 
+    function getIntegerScale() {
+        const targetRatio = CONFIG.REFERENCE_WIDTH / CONFIG.REFERENCE_HEIGHT;
+        const maxWidth = Math.floor(window.innerWidth * 0.9);
+        const maxHeight = Math.floor(window.innerHeight * 0.9);
+        
+        // Calcola la massima scala intera che rientra nello schermo
+        const scaleX = Math.floor(maxWidth / CONFIG.REFERENCE_WIDTH);
+        const scaleY = Math.floor(maxHeight / CONFIG.REFERENCE_HEIGHT);
+        const integerScale = Math.max(1, Math.min(scaleX, scaleY));
+        
+        return {
+            width: CONFIG.REFERENCE_WIDTH * integerScale,
+            height: CONFIG.REFERENCE_HEIGHT * integerScale
+        };
+    }
+
     function resizeCanvas() {
         const isMobile = isMobileDevice();
         const targetRatio = CONFIG.REFERENCE_WIDTH / CONFIG.REFERENCE_HEIGHT;
+        const { width, height } = getIntegerScale();
         
         // Dimensioni massime disponibili
         const maxWidth = isMobile ? window.innerWidth : window.innerWidth * 0.9;
@@ -731,9 +748,8 @@ document.addEventListener("DOMContentLoaded", () => {
             canvasWidth = canvasHeight * targetRatio;
         }
     
-        // Applica dimensioni (arrotondate per evitare sub-pixel)
-        elements.canvas.width = Math.floor(canvasWidth);
-        elements.canvas.height = Math.floor(canvasHeight);
+        elements.canvas.width = width;
+        elements.canvas.height = height;    
         
         // Stili CSS
         elements.canvas.style.width = `${canvasWidth}px`;
@@ -835,7 +851,7 @@ document.addEventListener("DOMContentLoaded", () => {
         
         // Stile del testo
         elements.ctx.save();
-        elements.ctx.font = `bold ${fontSize}px 'Press Start 2P', monospace`;
+        elements.ctx.font = `${fontSize}px 'Press Start 2P', monospace`;
         elements.ctx.fillStyle = options.color || "white";
         elements.ctx.textAlign = options.align || "center";
         elements.ctx.textBaseline = options.baseline || "middle";
@@ -1616,10 +1632,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 this.style.height = `${mobileHeight}px`;
             }
         });
-
+        // Aggiungi queste proprietà ANTIALIASING
         //elements.canvas.style.imageRendering = '-webkit-optimize-contrast';
         elements.canvas.style.imageRendering = 'pixelated';
-        //elements.canvas.style.imageRendering = 'crisp-edges';
+        elements.canvas.style.imageRendering = 'crisp-edges';
         elements.ctx.imageSmoothingEnabled = true;
         // Forza dimensioni intere per canvas
         const dpr = window.devicePixelRatio || 1;
