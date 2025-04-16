@@ -670,6 +670,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function handleJump(event) {
+        if (isMobileDevice() && event.type === 'touchstart') {
+            event.preventDefault();
+            event.stopPropagation();
+        }
         if (state.isJumpButtonPressed) return;
         state.isJumpButtonPressed = true;
     
@@ -726,42 +730,62 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function resizeCanvas() {
-        if (isMobileDevice()) {
-            const mobileScale = Math.min(
-                window.innerWidth / CONFIG.REFERENCE_WIDTH,
-                window.innerHeight / CONFIG.REFERENCE_HEIGHT
-            ) * 0.9;
+        const isMobile = isMobileDevice();
+        const targetRatio = CONFIG.REFERENCE_WIDTH / CONFIG.REFERENCE_HEIGHT;
+    
+        // 1. MODIFICA QUESTA PARTE (calcolo dimensioni mobile)
+        if (isMobile) {
+            // Usa il 90% dell'altezza disponibile come base
+            const baseHeight = window.innerHeight * 0.9;
+            const baseWidth = baseHeight * targetRatio;
             
-            elements.canvas.width = CONFIG.REFERENCE_WIDTH * mobileScale;
-            elements.canvas.height = CONFIG.REFERENCE_HEIGHT * mobileScale;
+            // Se il width risultante eccede lo schermo, scala in base alla larghezza
+            if (baseWidth > window.innerWidth * 0.95) {
+                elements.canvas.width = window.innerWidth * 0.95;
+                elements.canvas.height = elements.canvas.width / targetRatio;
+            } else {
+                elements.canvas.width = baseWidth;
+                elements.canvas.height = baseHeight;
+            }
+            
+            // Applica subito le dimensioni fisiche
+            elements.canvas.style.width = `${elements.canvas.width}px`;
+            elements.canvas.style.height = `${elements.canvas.height}px`;
+            
+            // Posizionamento elementi mobile
+            gameObjects.dino.y = elements.canvas.height * 0.65;
+            gameObjects.dina.y = elements.canvas.height * 0.65 - scaleValue(30, false);
+            
+            refreshAllSizes();
             return;
         }
-        const isMobile = isMobileDevice();
-        const maxWidth = window.innerWidth * (isMobile ? 0.95 : 0.9);
-        const maxHeight = window.innerHeight * (isMobile ? 0.95 : 0.9);
-
-        const aspectRatio = CONFIG.REFERENCE_WIDTH / CONFIG.REFERENCE_HEIGHT;
+    
+        // 2. MANTIENI QUESTO PER DESKTOP (la tua versione originale)
+        const maxWidth = window.innerWidth * 0.9;
+        const maxHeight = window.innerHeight * 0.9;
         let canvasWidth = maxWidth;
-        let canvasHeight = canvasWidth / aspectRatio;
+        let canvasHeight = canvasWidth / targetRatio;
     
         if (canvasHeight > maxHeight) {
             canvasHeight = maxHeight;
-            canvasWidth = canvasHeight * aspectRatio;
+            canvasWidth = canvasHeight * targetRatio;
         }
-
+    
         elements.canvas.width = canvasWidth;
         elements.canvas.height = canvasHeight;
         elements.canvas.style.width = `${canvasWidth}px`;
         elements.canvas.style.height = `${canvasHeight}px`;
-
+    
+        // 3. POSIZIONAMENTO ELEMENTI (modificato per consistenza)
         gameObjects.dino.y = elements.canvas.height * 0.65;
-        gameObjects.dina.y = scaleValue(250, false) - (isMobile ? scaleValue(30, false) : 0);
-
+        gameObjects.dina.y = elements.canvas.height * 0.65;
+    
+        // 4. MANTIENI IL RESTO DEL TUO CODICE ORIGINALE
         elements.canvas.style.position = "absolute";
         elements.canvas.style.left = "50%";
         elements.canvas.style.top = "50%";
         elements.canvas.style.transform = "translate(-50%, -50%)";
-
+    
         if(elements.coverVideo) {
             elements.coverVideo.style.width = `${Math.min(window.innerWidth * 0.9, elements.canvas.width)}px`;
             elements.coverVideo.style.height = `${Math.min(window.innerHeight * 0.9, elements.canvas.height)}px`;
@@ -915,17 +939,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function drawGameElements(ctx) {
         // 1. Disegna lo sfondo
+        ctx.save();
         ctx.drawImage(
-            elements.images.sfondo, 
-            0, 
-            0, 
-            elements.images.sfondo.width, 
-            elements.images.sfondo.height,
-            0,
-            0,
-            elements.canvas.width,
-            elements.canvas.height
+            elements.images.sfondo,
+            0, 0, elements.images.sfondo.width, elements.images.sfondo.height,
+            0, 0, elements.canvas.width, elements.canvas.height
         );
+        ctx.restore();
 
         // 2. Disegna gli ostacoli
         gameObjects.palms.forEach((obstacle) => {
@@ -979,19 +999,16 @@ document.addEventListener("DOMContentLoaded", () => {
                      gameObjects.gtr1.width, gameObjects.gtr1.height);
         }    
 
-        const scoreText = `Punteggio: ${state.score}`;
-        const scoreX = elements.canvas.width * 0.05; // 5% dalla sinistra
-        const scoreY = elements.canvas.height * 0.05; // 5% dall'alto
-        const scoreFontSize = Math.min(
-            elements.canvas.width * 0.04, 
-            elements.canvas.height * 0.04
-        ); // 4% della dimensione minore
+        const scoreX = elements.canvas.width * 0.05;
+        const scoreY = elements.canvas.height * 0.05;
+        const scoreSize = Math.min(elements.canvas.width, elements.canvas.height) * 0.04;
+        
         ctx.save();
-        ctx.font = `bold ${scoreFontSize}px 'Press Start 2P'`;
+        ctx.font = `bold ${scoreSize}px 'Press Start 2P'`;
         ctx.fillStyle = "white";
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
-        ctx.fillText(scoreText, scoreX, scoreY);
+        ctx.fillText(`Punteggio: ${state.score}`, scoreX, scoreY);
         ctx.restore();
         if(state.gamePaused && state.popupState < messages.length) {
             const currentMsg = messages[state.popupState];
@@ -1561,6 +1578,26 @@ document.addEventListener("DOMContentLoaded", () => {
     // 9. INIZIALIZZAZIONE
     // =============================================
     function init() {
+        if (isMobileDevice()) {
+            document.head.insertAdjacentHTML('beforeend', `
+                <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+                <style>
+                    #gameCanvas {
+                        position: fixed !important;
+                        top: 50% !important;
+                        left: 50% !important;
+                        transform: translate(-50%, -50%) !important;
+                        max-height: 90vh !important;
+                        max-width: 100% !important;
+                    }
+                    #jumpButton {
+                        font-size: 4vw !important;
+                        padding: 2vh 4vw !important;
+                        bottom: 5vh !important;
+                    }
+                </style>
+            `);
+        }
         if (isMobileDevice()) {
             const viewportMeta = document.createElement('meta');
             viewportMeta.name = 'viewport';
