@@ -135,3 +135,22 @@ body {
 .hidden {
     display: none !important;
 }
+
+@media (max-width: 768px) {
+    #gameCanvas {
+        width: 100% !important;
+        height: auto !important;
+        max-height: 80vh;
+        position: relative;
+        top: auto;
+        left: auto;
+        transform: none;
+    }
+    
+    body {
+        overflow: hidden;
+        position: fixed;
+        width: 100%;
+        height: 100%;
+    }
+}
