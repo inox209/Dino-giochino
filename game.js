@@ -732,67 +732,51 @@ document.addEventListener("DOMContentLoaded", () => {
     function resizeCanvas() {
         const isMobile = isMobileDevice();
         const targetRatio = CONFIG.REFERENCE_WIDTH / CONFIG.REFERENCE_HEIGHT;
-    
-        // 1. MODIFICA QUESTA PARTE (calcolo dimensioni mobile)
+        
         if (isMobile) {
-            // Usa il 90% dell'altezza disponibile come base
-            const baseHeight = window.innerHeight * 0.9;
-            const baseWidth = baseHeight * targetRatio;
+            // Mobile - usa viewport height come riferimento
+            const viewportHeight = window.innerHeight;
+            const viewportWidth = window.innerWidth;
             
-            // Se il width risultante eccede lo schermo, scala in base alla larghezza
-            if (baseWidth > window.innerWidth * 0.95) {
-                elements.canvas.width = window.innerWidth * 0.95;
-                elements.canvas.height = elements.canvas.width / targetRatio;
+            // Calcola dimensioni mantenendo aspect ratio
+            if (viewportHeight * targetRatio > viewportWidth) {
+                elements.canvas.width = viewportWidth;
+                elements.canvas.height = viewportWidth / targetRatio;
             } else {
-                elements.canvas.width = baseWidth;
-                elements.canvas.height = baseHeight;
+                elements.canvas.height = viewportHeight;
+                elements.canvas.width = viewportHeight * targetRatio;
             }
-            
-            // Applica subito le dimensioni fisiche
-            elements.canvas.style.width = `${elements.canvas.width}px`;
-            elements.canvas.style.height = `${elements.canvas.height}px`;
-            
-            // Posizionamento elementi mobile
-            gameObjects.dino.y = elements.canvas.height * 0.65;
-            gameObjects.dina.y = elements.canvas.height * 0.65 - scaleValue(30, false);
-            
-            refreshAllSizes();
-            return;
+        } else {
+            // Desktop - mantieni la tua logica originale
+            const maxWidth = window.innerWidth * 0.9;
+            const maxHeight = window.innerHeight * 0.9;
+            let canvasWidth = maxWidth;
+            let canvasHeight = canvasWidth / targetRatio;
+    
+            if (canvasHeight > maxHeight) {
+                canvasHeight = maxHeight;
+                canvasWidth = canvasHeight * targetRatio;
+            }
+    
+            elements.canvas.width = canvasWidth;
+            elements.canvas.height = canvasHeight;
         }
     
-        // 2. MANTIENI QUESTO PER DESKTOP (la tua versione originale)
-        const maxWidth = window.innerWidth * 0.9;
-        const maxHeight = window.innerHeight * 0.9;
-        let canvasWidth = maxWidth;
-        let canvasHeight = canvasWidth / targetRatio;
+        // Applica dimensioni
+        elements.canvas.style.width = `${elements.canvas.width}px`;
+        elements.canvas.style.height = `${elements.canvas.height}px`;
     
-        if (canvasHeight > maxHeight) {
-            canvasHeight = maxHeight;
-            canvasWidth = canvasHeight * targetRatio;
-        }
-    
-        elements.canvas.width = canvasWidth;
-        elements.canvas.height = canvasHeight;
-        elements.canvas.style.width = `${canvasWidth}px`;
-        elements.canvas.style.height = `${canvasHeight}px`;
-    
-        // 3. POSIZIONAMENTO ELEMENTI (modificato per consistenza)
+        // Posizionamento elementi
         gameObjects.dino.y = elements.canvas.height * 0.65;
         gameObjects.dina.y = elements.canvas.height * 0.65;
+        
+        // Centra il canvas
+        elements.canvas.style.position = 'absolute';
+        elements.canvas.style.left = '50%';
+        elements.canvas.style.top = '50%';
+        elements.canvas.style.transform = 'translate(-50%, -50%)';
     
-        // 4. MANTIENI IL RESTO DEL TUO CODICE ORIGINALE
-        elements.canvas.style.position = "absolute";
-        elements.canvas.style.left = "50%";
-        elements.canvas.style.top = "50%";
-        elements.canvas.style.transform = "translate(-50%, -50%)";
-    
-        if(elements.coverVideo) {
-            elements.coverVideo.style.width = `${Math.min(window.innerWidth * 0.9, elements.canvas.width)}px`;
-            elements.coverVideo.style.height = `${Math.min(window.innerHeight * 0.9, elements.canvas.height)}px`;
-            elements.coverVideo.style.objectFit = "contain";
-        }
         refreshAllSizes();
-        calculateMessagePositions();
     }
 
     function getObstacleInterval(scrollSpeed) {
@@ -1581,22 +1565,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (isMobileDevice()) {
             document.head.insertAdjacentHTML('beforeend', `
                 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-                <style>
-                    #gameCanvas {
-                        position: fixed !important;
-                        top: 50% !important;
-                        left: 50% !important;
-                        transform: translate(-50%, -50%) !important;
-                        max-height: 90vh !important;
-                        max-width: 100% !important;
-                    }
-                    #jumpButton {
-                        font-size: 4vw !important;
-                        padding: 2vh 4vw !important;
-                        bottom: 5vh !important;
-                    }
-                </style>
             `);
+            // Forza ridimensionamento iniziale
+            setTimeout(() => {
+                resizeCanvas();
+                window.scrollTo(0, 0);
+            }, 100);
         }
         if (isMobileDevice()) {
             const viewportMeta = document.createElement('meta');
