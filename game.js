@@ -732,51 +732,53 @@ document.addEventListener("DOMContentLoaded", () => {
     function resizeCanvas() {
         const isMobile = isMobileDevice();
         const targetRatio = CONFIG.REFERENCE_WIDTH / CONFIG.REFERENCE_HEIGHT;
-        
+        const windowRatio = window.innerWidth / window.innerHeight;
+        let canvasWidth, canvasHeight;
+    
         if (isMobile) {
-            // Mobile - usa viewport height come riferimento
-            const viewportHeight = window.innerHeight;
-            const viewportWidth = window.innerWidth;
-            
-            // Calcola dimensioni mantenendo aspect ratio
-            if (viewportHeight * targetRatio > viewportWidth) {
-                elements.canvas.width = viewportWidth;
-                elements.canvas.height = viewportWidth / targetRatio;
+            // Modalità mobile - adatta sia a portrait che landscape
+            if (windowRatio > targetRatio) {
+                // Schermo più largo del gioco (landscape)
+                canvasHeight = window.innerHeight;
+                canvasWidth = canvasHeight * targetRatio;
             } else {
-                elements.canvas.height = viewportHeight;
-                elements.canvas.width = viewportHeight * targetRatio;
+                // Schermo più stretto del gioco (portrait)
+                canvasWidth = window.innerWidth;
+                canvasHeight = canvasWidth / targetRatio;
             }
         } else {
-            // Desktop - mantieni la tua logica originale
+            // Modalità desktop - mantieni la tua logica originale
             const maxWidth = window.innerWidth * 0.9;
             const maxHeight = window.innerHeight * 0.9;
-            let canvasWidth = maxWidth;
-            let canvasHeight = canvasWidth / targetRatio;
+            canvasWidth = maxWidth;
+            canvasHeight = canvasWidth / targetRatio;
     
             if (canvasHeight > maxHeight) {
                 canvasHeight = maxHeight;
                 canvasWidth = canvasHeight * targetRatio;
             }
-    
-            elements.canvas.width = canvasWidth;
-            elements.canvas.height = canvasHeight;
         }
     
-        // Applica dimensioni
+        // Applica dimensioni con valori interi (evita sub-pixel rendering)
+        elements.canvas.width = Math.floor(canvasWidth);
+        elements.canvas.height = Math.floor(canvasHeight);
+        
+        // Stili CSS per il canvas
         elements.canvas.style.width = `${elements.canvas.width}px`;
         elements.canvas.style.height = `${elements.canvas.height}px`;
-    
-        // Posizionamento elementi
-        gameObjects.dino.y = elements.canvas.height * 0.65;
-        gameObjects.dina.y = elements.canvas.height * 0.65;
-        
-        // Centra il canvas
         elements.canvas.style.position = 'absolute';
         elements.canvas.style.left = '50%';
         elements.canvas.style.top = '50%';
         elements.canvas.style.transform = 'translate(-50%, -50%)';
     
+        // Aggiorna posizioni degli elementi di gioco
+        gameObjects.dino.y = elements.canvas.height * 0.65;
+        gameObjects.dina.y = elements.canvas.height * 0.65;
+        
+        // Aggiorna tutte le dimensioni scalate
         refreshAllSizes();
+        
+        console.log(`Canvas resized to: ${elements.canvas.width}x${elements.canvas.height} (Ratio: ${elements.canvas.width/elements.canvas.height})`);
     }
 
     function getObstacleInterval(scrollSpeed) {
@@ -1009,6 +1011,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function update(timestamp) {
+        const groundLevel = elements.canvas.height - gameObjects.dino.height - (isMobileDevice() ? 10 : 0);
         // Controllo scorciatoia per impostare il punteggio a 49
         if (state.aKeyPressed && (timestamp - state.aKeyPressStartTime) >= 3000) {
             state.score = 49;
@@ -1646,6 +1649,13 @@ document.addEventListener("DOMContentLoaded", () => {
             }, 500);
         }
         setupVideoForMobile();
+        // Listener per cambiamenti orientamento
+        window.addEventListener('resize', () => {
+            setTimeout(resizeCanvas, 100);
+        });
+    
+        // Forza ridimensionamento iniziale
+        resizeCanvas();
     }
 
     // Avvia il gioco
