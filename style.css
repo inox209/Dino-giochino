@@ -53,6 +53,7 @@ body {
         height: 100% !important;
         max-width: 100% !important;
         max-height: 100% !important;
+        --ground-level: calc(100% - 100px);
     }
 
     body {
@@ -68,5 +69,11 @@ body {
         width: 95% !important;
         padding: 15px !important;
         font-size: 12px !important;
+    }
+}
+
+@media (min-width: 769px) {
+    #jumpButton {
+        display: none !important;
     }
 }
