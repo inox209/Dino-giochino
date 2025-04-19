@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     // =============================================
-    // 1. COSTANTI E CONFIGURAZIONI
+    // 1. CONFIGURAZIONI E COSTANTI
     // =============================================
     const CONFIG = {
         // Dimensioni di riferimento
@@ -8,39 +8,38 @@ document.addEventListener("DOMContentLoaded", () => {
         REFERENCE_HEIGHT: 400,
         MOBILE_BREAKPOINT: 768,
         INITIAL_PAIR_PROBABILITY: 0.1,
-        
-        // Immagini
         TOTAL_IMAGES: 9,
         
         // Offset ostacoli
         OFFSET_CONFIG: {
             GRANCHIO: { yOffset: 0, mobileYOffset: 15 },
             CASTELLO: { yOffset: 0, mobileYOffset: 10 },
-            PALM: { yOffset: 10, mobileYOffset: 5 },       // Solo offset qui
-            UMBRELLA: { yOffset: -20, mobileYOffset: -10 } // Solo offset qui
+            PALM: { yOffset: 10, mobileYOffset: 5 },
+            UMBRELLA: { yOffset: -20, mobileYOffset: -10 }
         },
     
-        OBSTACLE_PHYSICS: {  // Nuova sezione per le proprietà fisiche
+        // Fisica ostacoli
+        OBSTACLE_PHYSICS: {
             palm: {
                 width: 144 * 1.2 * 0.9,
                 graphicHeight: 144 * 1.2 * 0.9,
                 collisionHeight: 50,
-                hitboxWidthRatio: 0.4, // 20% della larghezza grafica
-                offsetKey: "PALM",       // Riferimento a OFFSET_CONFIG
+                hitboxWidthRatio: 0.4,
+                offsetKey: "PALM",
                 extraOffset: 0
             },
             umbrella: {
                 width: 144 * 0.8,
                 graphicHeight: 144 * 0.8,
                 collisionHeight: 144 * 0.8 * 0.6,
-                hitboxWidthRatio: 0.1, // 15% della larghezza grafica
-                offsetKey: "UMBRELLA",   // Riferimento a OFFSET_CONFIG
+                hitboxWidthRatio: 0.1,
+                offsetKey: "UMBRELLA",
                 extraOffset: 20
             }
         },
         
         // Gameplay
-        INITIAL_SCROLL_SPEED: 3,
+        INITIAL_SCROLL_SPEED: 2,
         MAX_PAIR_PROBABILITY: 0.5,
         INITIAL_OBSTACLE_INTERVAL: 2000,
         MIN_OBSTACLE_INTERVAL: 2000,
@@ -49,109 +48,21 @@ document.addEventListener("DOMContentLoaded", () => {
         MASK_PAUSE_DURATION: 2000,
         MASK_DURATION: 5000
     };
-    document.head.insertAdjacentHTML('beforeend', `
-        <style>
-            /* Stili base per i messaggi */
-            .prize-message-container {
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                width: 80%;
-                max-width: 600px;
-                background-color: rgba(0, 0, 0, 0.85);
-                border-radius: 10px;
-                padding: 20px;
-                box-sizing: border-box;
-                text-align: center;
-                z-index: 1001;
-                display: none;
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .prize-message-container a {
-                color: #00ffff;
-                font-family: 'Press Start 2P', cursive;
-                font-size: 18px;
-                text-decoration: none;
-                padding: 12px 24px;
-                border: 2px solid #00ffff;
-                border-radius: 5px;
-                margin-top: 20px;
-                transition: all 0.3s;
-            }
-            
-            .prize-message-container a:hover {
-                background-color: #00ffff;
-                color: black;
-            }
-            
-            /* Stili per le scritte iniziali */
-            .popup-text {
-                font-family: 'Press Start 2P', cursive;
-                color: white;
-                font-size: 16px;
-                line-height: 1.6;
-                margin: 10px 0;
-                text-align: center;
-                word-wrap: break-word;
-            }
-            
-            /* Media query mobile */
-            @media (max-width: 768px) {
-                #gameCanvas {
-                    position: relative !important;
-                    z-index: 1;
-                    max-height: 90vh !important;
-                }
-                
-                .prize-message-container {
-                    position: absolute !important;
-                    top: 65% !important;
-                    width: 90% !important;
-                    padding: 15px !important;
-                }
-                
-                .prize-message-container a {
-                    font-size: 14px !important;
-                    padding: 10px 15px !important;
-                }
-                
-                .popup-text {
-                    font-size: 12px !important;
-                    line-height: 1.4 !important;
-                    padding: 5px 0 !important;
-                }
-            }
-            
-            /* Stili per il pulsante mobile */
-            #jumpButton {
-                font-family: 'Press Start 2P', cursive;
-                z-index: 1002;
-            }
-        </style>
-    `);
 
     // =============================================
-    // 2. VARIABILI DI STATO
+    // 2. STATO DEL GIOCO
     // =============================================
-    let state = {
+    const state = {
         animationFrameId: null,
-        // Caricamento risorse
         fontsLoaded: false,
         imagesLoaded: 0,
         audioBuffersLoaded: false,
         currentText: "",
-        
-        // Game state
         gamePaused: true,
         gameEnded: false,
         popupState: 0,
         score: 0,
-        scrollSpeed: isMobileDevice() ? 3 : 5,
-        
-        // Timing
+        scrollSpeed: CONFIG.INITIAL_SCROLL_SPEED,
         startTime: null,
         lastObstacleTime: 0,
         lastGranchioTime: 0,
@@ -160,16 +71,12 @@ document.addEventListener("DOMContentLoaded", () => {
         dinoMoveTime: null,
         maskStartTime: null,
         maskPauseTime: null,
-        
-        // Flags
+        maskComplete: false,
         isJumpButtonPressed: false,
         isGranchioNext: true,
         coverVideoPlayed: false,
-        
-        // Progressi
         maskProgress: 0,
-        pairProbability: 0.1,
-
+        pairProbability: CONFIG.INITIAL_PAIR_PROBABILITY,
         aKeyPressed: false,
         aKeyPressStartTime: 0,
         startMovingToCenter: false,
@@ -177,56 +84,18 @@ document.addEventListener("DOMContentLoaded", () => {
         showDina: false,
         dinaEntryComplete: false,
         dinaPauseStartTime: null,
-        dinaMovingToCenter: false,
-        pairProbability: CONFIG.INITIAL_PAIR_PROBABILITY || 0.1
+        dinaMovingToCenter: false
     };
 
     // =============================================
     // 3. ELEMENTI DEL GIOCO
     // =============================================
     const elements = {
-        // Canvas e rendering
         canvas: document.getElementById("gameCanvas"),
         ctx: null,
-        
-        // Pulsanti
         jumpButton: document.getElementById("jumpButton"),
-        
-        // Video
-        coverVideo: (() => {
-            const video = document.createElement("video");
-            video.src = "assets/cover.mp4";
-            video.loop = false;
-            video.muted = true;
-            video.setAttribute('playsinline', ''); // Essenziale per iOS
-            video.setAttribute('webkit-playsinline', ''); // Per vecchi browser iOS
-            video.style.position = "fixed";
-            video.style.top = "50%";
-            video.style.left = "50%";
-            video.style.transform = "translate(-50%, -50%)";
-            video.style.maxWidth = "100%";
-            video.style.maxHeight = "100%";
-            video.style.display = "none";
-            video.style.opacity = "0";
-            video.style.transition = "opacity 2s";
-            video.style.zIndex = "999";
-            document.body.appendChild(video);
-            return video;
-        })(),
-        
-        // Immagini
-        images: {
-            dino: new Image(),
-            dina: new Image(),
-            gtr1: new Image(),
-            palm: new Image(),
-            umbrella: new Image(),
-            granchio: new Image(),
-            castello: new Image(),
-            sfondo: new Image()
-        },
-        
-        // Audio
+        coverVideo: createCoverVideo(),
+        images: createGameImages(),
         audioContext: null,
         audioBuffers: {
             mare: null,
@@ -242,79 +111,250 @@ document.addEventListener("DOMContentLoaded", () => {
             bass: null,
             drum: null
         },
-
-        prizeMessage: {
-            container: document.createElement("div"),
-            text: document.createElement("div"),
-            button: document.createElement("a")
-        }
-
+        prizeMessage: createPrizeMessage()
     };
 
     // =============================================
     // 4. OGGETTI DI GIOCO
     // =============================================
     const gameObjects = {
-        dino: {
+        dino: createDinoObject(),
+        dina: null,
+        gtr1: createGtrObject(),
+        palms: [],
+        granchio: createGranchioObject(),
+        castello: createCastelloObject()
+    };
+
+    gameObjects.dina = createDinaObject();
+    function alignDinaWithDino() {
+        if (!gameObjects.dina) return;
+        
+        // Mantieni la posizione Y fissa indipendentemente da Dino
+        const targetY = isMobileDevice() ? -70 * 0.8 : -70;
+        
+        // DEBUG
+        console.log('Aligning Dina - Current Y:', gameObjects.dina.y, 'Target Y:', targetY);
+        
+        gameObjects.dina.y = targetY;
+    }
+    
+    alignDinaWithDino();
+
+    // =============================================
+    // 5. FUNZIONI DI INIZIALIZZAZIONE
+    // =============================================
+    function createCoverVideo() {
+        const video = document.createElement("video");
+        video.src = "assets/cover.mp4";
+        video.loop = false;
+        video.muted = true;
+        video.setAttribute('playsinline', '');
+        video.setAttribute('webkit-playsinline', '');
+        video.style.position = "fixed";
+        video.style.top = "50%";
+        video.style.left = "50%";
+        video.style.transform = "translate(-50%, -50%)";
+        video.style.maxWidth = "100%";
+        video.style.maxHeight = "100%";
+        video.style.display = "none";
+        video.style.opacity = "0";
+        video.style.transition = "opacity 2s";
+        video.style.zIndex = "999";
+        document.body.appendChild(video);
+        return video;
+    }
+
+    function createGameImages() {
+        const images = {
+            dino: new Image(),
+            dina: new Image(),
+            gtr1: new Image(),
+            palm: new Image(),
+            umbrella: new Image(),
+            granchio: new Image(),
+            castello: new Image(),
+            sfondo: new Image()
+        };
+        
+        Object.keys(images).forEach(key => {
+            images[key].onload = checkAllImagesLoaded;
+            images[key].onerror = () => console.error(`Error loading image: ${key}`);
+        });
+        
+        return images;
+    }
+
+    function createPrizeMessage() {
+        const container = document.createElement("div");
+        const text = document.createElement("div");
+        const button = document.createElement("a");
+        
+        container.className = "prize-message-container";
+        container.appendChild(text);
+        container.appendChild(button);
+        document.body.appendChild(container);
+        
+        return { container, text, button };
+    }
+
+    function createDinoObject() {
+        const dinoHeight = scaleValue(isMobileDevice() ? 180 : 150, false, { isDino: true });
+        const groundOffset = isMobileDevice() ? scaleValue(20, false) : 0;
+        const groundLevel = elements.canvas.height - dinoHeight - groundOffset;
+    
+        return {
             x: scaleValue(100),
-            y: isMobileDevice() ? elements.canvas.height * 0.7 : elements.canvas.height * 0.7,
+            y: groundLevel, // Posizione iniziale a terra
             width: scaleValue(isMobileDevice() ? 180 : 150, true, { isDino: true }),
-            height: scaleValue(isMobileDevice() ? 180 : 150, false, { isDino: true }),
+            height: dinoHeight,
             isJumping: false,
             jumpSpeed: isMobileDevice() ? -18 : -18,
             gravity: isMobileDevice() ? 0.55 : 0.55,
-            maxJumpHeight: isMobileDevice() ? 180 : 250,
             startX: scaleValue(100),
             finalTargetX: elements.canvas.width/2 - scaleValue(150),
-            moveSpeed: 2
-        },
-        
-        dina: {
-            startX: elements.canvas.width + scaleValue(200),
-            entryTargetX: elements.canvas.width - scaleValue(200),
-            finalTargetX: elements.canvas.width/2 + scaleValue(50),
-            width: scaleValue(isMobileDevice() ? 120 : 150, true, { isDina: true }),
-            height: scaleValue(isMobileDevice() ? 120 : 150, false, { isDina: true }),
-            entrySpeed: 3,
             moveSpeed: 2,
-            x: elements.canvas.width + scaleValue(200),
-            y: isMobileDevice() ? elements.canvas.height * 0.7 : elements.canvas.height * 0.65,
+            groundLevel: groundLevel,
+        };
+    }
+
+    function createDinaObject() {
+        // 1. Prendiamo le dimensioni reali di Dino come riferimento
+        const dinoHeight = gameObjects.dino?.height || scaleValue(150, false, { isDino: true });
+        const dinoGroundLevel = gameObjects.dino?.groundLevel || 
+                               (elements.canvas.height - dinoHeight - (isMobileDevice() ? scaleValue(20, false) : 0));
+    
+        // 2. Dimensioni di Dina (valori originali che funzionavano)
+        const dinaHeight = scaleValue(isMobileDevice() ? 160 : 320, false, { isDina: true });
+        const dinaWidth = scaleValue(isMobileDevice() ? 160 : 320, true, { isDina: true });
+    
+        // 3. Calcolo posizione Y - Versione corretta che funzionava
+        const dinaY = dinoGroundLevel + dinoHeight - dinaHeight - scaleValue(10, false);
+    
+        console.log('Debug posizione Dina:', {
+            canvasHeight: elements.canvas.height,
+            dinoGroundLevel: dinoGroundLevel,
+            dinoHeight: dinoHeight,
+            dinaHeight: dinaHeight,
+            calculatedY: dinaY
+        });
+    
+        return {
+            startX: elements.canvas.width + scaleValue(100),
+            entryTargetX: elements.canvas.width - scaleValue(250),
+            finalTargetX: elements.canvas.width/2 + scaleValue(50),
+            width: dinaWidth,
+            height: dinaHeight,
+            entrySpeed: 5,
+            moveSpeed: 3,
+            x: elements.canvas.width + scaleValue(100),
+            y: dinaY, // Posizione corretta già testata
             visible: false,
             state: "hidden"
-        },
+        };
+    }
 
-        gtr1: {
+    function createGtrObject() {
+        return {
             offsetX: scaleValue(20),
             offsetY: scaleValue(20, false),
             width: scaleValue(isMobileDevice() ? 150 : 270, true, { isgtr1: true }),
             height: scaleValue(isMobileDevice() ? 150 : 270, false, { isgtr1: true }),
-        },
-        
-        palms: [],
-        
-        granchio: { 
+        };
+    }
+
+    function createGranchioObject() {
+        return { 
             x: elements.canvas.width, 
             y: elements.canvas.height - getMobileObstacleOffset(),
             width: scaleValue(isMobileDevice() ? 200 : 200, true, { isgranchio: true }),
             height: scaleValue(isMobileDevice() ? 200 : 200, true, { isgranchio: true }),
             visible: false
-        },
-        
-        castello: { 
+        };
+    }
+
+    function createCastelloObject() {
+        return { 
             x: elements.canvas.width, 
             y: elements.canvas.height - getMobileObstacleOffset(),
             width: scaleValue(isMobileDevice() ? 50 : 150, true, { isobstacle: true }),
             height: scaleValue(isMobileDevice() ? 50 : 150, true, { isobstacle: true }),
             visible: false 
-        }
-    };
+        };
+    }
 
     // =============================================
-    // 5. FUNZIONI UTILITY
+    // 6. FUNZIONI UTILITY
     // =============================================
     function isMobileDevice() {
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
                window.innerWidth <= CONFIG.MOBILE_BREAKPOINT;
+    }
+
+    function scaleValue(value, isWidth = true, options = {}) {
+        const { isDino = false, isObstacle = false } = options;
+        const scaleFactor = isWidth ? elements.canvas.width / CONFIG.REFERENCE_WIDTH : 
+                                    elements.canvas.height / CONFIG.REFERENCE_HEIGHT;
+
+        if (isMobileDevice()) {
+            if (isDino) return value * scaleFactor * 0.8;
+            if (isObstacle) return value * scaleFactor * 0.4;
+            return value * scaleFactor;
+        } else {
+            if (isDino) return value * scaleFactor * 0.9;
+            if (isObstacle) return value * scaleFactor * 0.3;
+            return value * scaleFactor;
+        }
+    }
+
+    function ensureDinaPosition() {
+        if (!gameObjects.dino || !gameObjects.dina) return;
+        
+        const expectedY = gameObjects.dino.groundLevel + gameObjects.dino.height - gameObjects.dina.height - scaleValue(10, false);
+        
+        if (Math.abs(gameObjects.dina.y - expectedY) > 5) {
+            console.log('Correzione posizione Dina:', {
+                vecchiaPosizione: gameObjects.dina.y,
+                nuovaPosizione: expectedY,
+                groundLevel: gameObjects.dino.groundLevel,
+                dinoHeight: gameObjects.dino.height,
+                dinaHeight: gameObjects.dina.height,
+                offset: scaleValue(10, false)
+            });
+            gameObjects.dina.y = expectedY;
+        }
+    }
+
+    function getMobileObstacleOffset() {
+        return isMobileDevice() ? scaleValue(30, false) : 0;
+    }
+
+    function getVerticalOffset(elementKey) {
+        const config = CONFIG.OFFSET_CONFIG[elementKey];
+        if (!config) return 0;
+        
+        const baseOffset = scaleValue(config.yOffset, false);
+        return isMobileDevice() ? baseOffset + scaleValue(config.mobileYOffset, false) : baseOffset;
+    }
+
+    function getObstacleInterval(scrollSpeed) {
+        const interval = CONFIG.INITIAL_OBSTACLE_INTERVAL - (scrollSpeed - 5) * 60;
+        return Math.max(interval, CONFIG.MIN_OBSTACLE_INTERVAL);
+    }
+
+    function getIntegerScale() {
+        const targetRatio = CONFIG.REFERENCE_WIDTH / CONFIG.REFERENCE_HEIGHT;
+        const maxWidth = Math.floor(window.innerWidth * 0.9);
+        const maxHeight = Math.floor(window.innerHeight * 0.9);
+        
+        const scaleX = Math.floor(maxWidth / CONFIG.REFERENCE_WIDTH);
+        const scaleY = Math.floor(maxHeight / CONFIG.REFERENCE_HEIGHT);
+        const integerScale = Math.max(1, Math.min(scaleX, scaleY));
+        
+        return {
+            width: CONFIG.REFERENCE_WIDTH * integerScale,
+            height: CONFIG.REFERENCE_HEIGHT * integerScale
+        };
     }
 
     function getResponsiveTextSizes(type = 'default') {
@@ -336,94 +376,29 @@ document.addEventListener("DOMContentLoaded", () => {
         
         return {
             size: isMobile ? config.mobile : config.desktop,
-            lineHeight: (isMobile ? config.mobile : config.desktop) * config.lineHeightMultiplier,
-            letterSpacing: isMobile ? 0.5 : 1
+            lineHeight: (isMobile ? config.mobile : config.desktop) * config.lineHeightMultiplier
         };
     }
 
-    function scaleValue(value, isWidth = true, options = {}) {
-        const { isDino = false, isObstacle = false } = options;
-        const scaleFactor = isWidth ? elements.canvas.width / CONFIG.REFERENCE_WIDTH : 
-        elements.canvas.height / CONFIG.REFERENCE_HEIGHT;
-
-        if (isMobileDevice()) {
-            if (isDino) return value * scaleFactor * 0.8;
-            if (isObstacle) return value * scaleFactor * 0.4;
-            return value * scaleFactor;
-        } else {
-            if (isDino) return value * scaleFactor * 0.9;
-            if (isObstacle) return value * scaleFactor * 0.3;
-            return value * scaleFactor;
-        }
-    }
-
-    function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, color) {
-        elements.ctx.save();
-        elements.ctx.font = `bold ${isMobileDevice() ? 12 : 16}px 'Press Start 2P'`;
-        elements.ctx.fillStyle = color;
-        elements.ctx.textAlign = "center";
-        
-        const words = text.split(' ');
-        let line = '';
-        let testLine;
-        let metrics;
-        const lines = [];
-        
-        for (let i = 0; i < words.length; i++) {
-            testLine = line + words[i] + ' ';
-            metrics = elements.ctx.measureText(testLine);
-            if (metrics.width > maxWidth && i > 0) {
-                lines.push(line);
-                line = words[i] + ' ';
-            } else {
-                line = testLine;
-            }
-        }
-        lines.push(line);
-        
-        for (let i = 0; i < lines.length; i++) {
-            elements.ctx.fillText(lines[i].trim(), x, y + (i * lineHeight));
-        }
-        elements.ctx.restore();
-    }
-
-    function refreshAllSizes() {
-        gameObjects.dino.width = scaleValue(100, true, { isDino: true });
-        gameObjects.dino.height = scaleValue(100, false, { isDino: true });
-        gameObjects.granchio.width = scaleValue(200, true, { isObstacle: true });
-        gameObjects.granchio.height = scaleValue(200, false, { isObstacle: true });
-    }
-
-    function getMobileObstacleOffset() {
-        return isMobileDevice() ? scaleValue(30, false) : 0;
-    }
-
-    function getVerticalOffset(elementKey) {
-        const config = CONFIG.OFFSET_CONFIG[elementKey];
-        if (!config) return 0;
-        
-        const baseOffset = scaleValue(config.yOffset, false);
-        
-        if (isMobileDevice()) {
-            return baseOffset + scaleValue(config.mobileYOffset, false);
-        }
-        
-        return baseOffset;
-    }
-
     // =============================================
-    // 6. GESTIONE DELLE RISORSE
+    // 7. GESTIONE RISORSE
     // =============================================
     function initResources() {
-        // Carica font
-        document.fonts.load('16px "Press Start 2P"').then(() => {
-            console.log("Font caricato correttamente");
-            state.fontsLoaded = true;
-        }).catch(err => {
-            console.error("Errore caricamento font:", err);
-        });
+        loadFonts();
+        loadImages();
+        initAudioContext();
+        if (!elements.audioSources.mare && elements.audioBuffers.mare) {
+            startMareAudio(0.5);
+        }
+    }
 
-        // Imposta sorgenti immagini
+    function loadFonts() {
+        document.fonts.load('16px "Press Start 2P"').then(() => {
+            state.fontsLoaded = true;
+        }).catch(console.error);
+    }
+
+    function loadImages() {
         const imgSources = {
             dino: "assets/dino.png",
             dina: "assets/dina.png",
@@ -435,146 +410,118 @@ document.addEventListener("DOMContentLoaded", () => {
             sfondo: "assets/sfondo.png"
         };
 
-        // Carica immagini
         Object.keys(imgSources).forEach(key => {
             elements.images[key].src = imgSources[key];
-            elements.images[key].onload = checkAllImagesLoaded;
-            elements.images[key].onerror = () => console.error(`Errore nel caricamento di ${imgSources[key]}`);
         });
-
-        // Inizializza canvas context
-        elements.ctx = elements.canvas.getContext("2d");
-
-        // Carica audio
-        loadAudioBuffers();
     }
 
     function checkAllImagesLoaded() {
         state.imagesLoaded++;
-        console.log(`Immagine caricata ${state.imagesLoaded}/${CONFIG.TOTAL_IMAGES}: ${this.src}`);
-        
         if (state.imagesLoaded === CONFIG.TOTAL_IMAGES) {
-            console.log("Tutte le immagini sono state caricate");
-            console.log("Dimensioni palma:", elements.images.palm.width, elements.images.palm.height);
-            console.log("Dimensioni ombrellone:", elements.images.umbrella.width, elements.images.umbrella.height);
-            
-            if (state.gamePaused) {
-                requestAnimationFrame(gameLoop);
-            }
-            
-            if (state.popupState >= 1 && !elements.audioSources.mare) {
-                startMareAudio();
-            }
+            console.log("Tutte le immagini caricate");
+            if (state.gamePaused) requestAnimationFrame(gameLoop);
         }
     }
 
     // =============================================
-    // 7. GESTIONE AUDIO
+    // 8. GESTIONE AUDIO
     // =============================================
     function initAudioContext() {
         if (!elements.audioContext) {
             elements.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            console.log("AudioContext initialized:", elements.audioContext.state);
-            
-            // Aggiungi gestore per eventi di interazione globale
             document.addEventListener('click', resumeAudioContextOnce, { once: true });
         }
-        return elements.audioContext;
+        loadAudioBuffers();
     }
 
     function resumeAudioContext() {
-        if (elements.audioContext && elements.audioContext.state === 'suspended') {
-            elements.audioContext.resume().then(() => {
-                console.log("AudioContext riattivato");
-            });
+        if (elements.audioContext?.state === 'suspended') {
+            elements.audioContext.resume().then(() => console.log("AudioContext riattivato"));
         }
     }
 
-    async function loadAudioBuffer(url) {
+    function resumeAudioContextOnce() {
+        resumeAudioContext();
+        document.removeEventListener('click', resumeAudioContextOnce);
+    }
+
+    async function loadAudioBuffers() {
         try {
-            if (!elements.audioContext) initAudioContext();
-        
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
-            const arrayBuffer = await response.arrayBuffer();
-            return await elements.audioContext.decodeAudioData(arrayBuffer);
-        } catch (error) {
-            console.error(`Error loading ${url}:`, error);
-            return null;
-        }
-    }
+            const audioFiles = [
+                { key: "mare", url: "assets/mare.mp3" },
+                { key: "gtrs", url: "assets/gtrs.mp3" },
+                { key: "keys", url: "assets/keys.mp3" },
+                { key: "bass", url: "assets/bass.mp3" },
+                { key: "drum", url: "assets/drum.mp3" }
+            ];
 
-    function loadAudioBuffers() {
-        initAudioContext();
-        Promise.all([
-            loadAudioBuffer("assets/mare.mp3"),
-            loadAudioBuffer("assets/gtrs.mp3"),
-            loadAudioBuffer("assets/keys.mp3"),
-            loadAudioBuffer("assets/bass.mp3"),
-            loadAudioBuffer("assets/drum.mp3")
-        ]).then(([mare, gtrs, keys, bass, drum]) => {
-            elements.audioBuffers.mare = mare;
-            elements.audioBuffers.gtrs = gtrs;
-            elements.audioBuffers.keys = keys;
-            elements.audioBuffers.bass = bass;
-            elements.audioBuffers.drum = drum;
-        
+            const buffers = await Promise.all(
+                audioFiles.map(async ({ url }) => {
+                    const response = await fetch(url);
+                    const arrayBuffer = await response.arrayBuffer();
+                    return elements.audioContext.decodeAudioData(arrayBuffer);
+                })
+            );
+
+            audioFiles.forEach(({ key }, index) => {
+                elements.audioBuffers[key] = buffers[index];
+            });
+
             state.audioBuffersLoaded = true;
-            console.log("Audio buffers loaded");
-        }).catch(error => {
+        } catch (error) {
             console.error("Audio loading failed:", error);
-        });
+        }
     }
 
     function playAudioBuffer(buffer, volume = 0.75, loop = true) {
+        if (!buffer) return null;
+        
         const source = elements.audioContext.createBufferSource();
         const gainNode = elements.audioContext.createGain();
+        
         source.buffer = buffer;
         source.loop = loop;
         gainNode.gain.value = volume;
         source.connect(gainNode);
         gainNode.connect(elements.audioContext.destination);
         source.start(0);
-        console.log(`Audio started with volume ${volume}`);
+        
         return { source, gainNode };
     }
 
-    function startMareAudio() {
+    function startMareAudio(volume = 0.7) {
         if (!elements.audioSources.mare && elements.audioBuffers.mare) {
-            // Assicurati che l'audio context sia running
-            if (elements.audioContext.state === 'suspended') {
+            if (!elements.audioContext || elements.audioContext.state === 'suspended') {
+                initAudioContext();
                 elements.audioContext.resume().then(() => {
-                    console.log("AudioContext riattivato");
-                    elements.audioSources.mare = playAudioBuffer(elements.audioBuffers.mare, 0.5, true);
+                    elements.audioSources.mare = playAudioBuffer(elements.audioBuffers.mare, volume, true);
                 });
             } else {
-                elements.audioSources.mare = playAudioBuffer(elements.audioBuffers.mare, 0.5, true);
+                elements.audioSources.mare = playAudioBuffer(elements.audioBuffers.mare, volume, true);
             }
-            console.log("Mare audio started");
+        } else if (elements.audioSources.mare) {
+            elements.audioSources.mare.gainNode.gain.value = volume;
         }
     }
 
     function startAdditionalAudio() {
         if (!elements.audioSources.gtrs && elements.audioBuffers.gtrs) {
             elements.audioSources.gtrs = playAudioBuffer(elements.audioBuffers.gtrs, 0, true);
-            console.log("gtrs audio started");
         }
         if (!elements.audioSources.keys && elements.audioBuffers.keys) {
             elements.audioSources.keys = playAudioBuffer(elements.audioBuffers.keys, 0, true);
-            console.log("keys audio started");
         }
         if (!elements.audioSources.bass && elements.audioBuffers.bass) {
             elements.audioSources.bass = playAudioBuffer(elements.audioBuffers.bass, 0, true);
-            console.log("bass audio started");
         }
         if (!elements.audioSources.drum && elements.audioBuffers.drum) {
             elements.audioSources.drum = playAudioBuffer(elements.audioBuffers.drum, 0, true);
-            console.log("drum audio started");
         }
     }
 
     function fadeOutAudio(audio, duration) {
+        if (!audio) return;
+        
         const startVolume = audio.gainNode.gain.value;
         const startTime = elements.audioContext.currentTime;
 
@@ -583,52 +530,58 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function updateAudioVolumes() {
-        // Volume di mare.mp3
-        if (state.score <= 10) {
-            const volume = 0.75 - (state.score * 0.0675);
-            if (elements.audioSources.mare) elements.audioSources.mare.gainNode.gain.value = volume;
-        } else {
-            if (elements.audioSources.mare) {
-                elements.audioSources.mare.gainNode.gain.value = 0.075;
+        // Aggiorna i volumi in base al punteggio
+        const score = state.score;
+        
+        // Audio mare (decresce da 0.75 a 0.075 tra score 0-10)
+        if (elements.audioSources.mare) {
+            elements.audioSources.mare.gainNode.gain.value = 
+                score <= 10 ? 0.75 - (score * 0.0675) : 0.075;
+        }
+    
+        // Audio gtrs (attivato da score 5, volume cresce fino a 1.0 a score 15)
+        if (elements.audioSources.gtrs) {
+            if (score >= 5 && score <= 15) {
+                const volume = (score - 5) * 0.1;
+                elements.audioSources.gtrs.gainNode.gain.value = volume;
+            } else if (score < 5) {
+                elements.audioSources.gtrs.gainNode.gain.value = 0;
             }
         }
-
-        // Volume di gtrs (da 5 a 15)
-        if (state.score >= 5 && state.score <= 15) {
-            const volume = (state.score - 5) * 0.1;
-            if (elements.audioSources.gtrs) elements.audioSources.gtrs.gainNode.gain.value = volume;
+    
+        // Audio keys (attivato da score 15, volume cresce fino a 1.0 a score 25)
+        if (elements.audioSources.keys) {
+            if (score >= 15 && score <= 25) {
+                const volume = (score - 15) * 0.1;
+                elements.audioSources.keys.gainNode.gain.value = volume;
+            } else if (score < 15) {
+                elements.audioSources.keys.gainNode.gain.value = 0;
+            }
         }
-
-        // Volume di keys (da 15 a 25)
-        if (state.score >= 15 && state.score <= 25) {
-            const volume = (state.score - 15) * 0.1;
-            if (elements.audioSources.keys) elements.audioSources.keys.gainNode.gain.value = volume;
+    
+        // Audio bass (attivato da score 25, volume cresce fino a 1.0 a score 35)
+        if (elements.audioSources.bass) {
+            if (score >= 25 && score <= 35) {
+                const volume = (score - 25) * 0.1;
+                elements.audioSources.bass.gainNode.gain.value = volume;
+            } else if (score < 25) {
+                elements.audioSources.bass.gainNode.gain.value = 0;
+            }
         }
-
-        // Volume di bass (da 25 a 35)
-        if (state.score >= 25 && state.score <= 35) {
-            const volume = (state.score - 25) * 0.1;
-            if (elements.audioSources.bass) elements.audioSources.bass.gainNode.gain.value = volume;
+    
+        // Audio drum (attivato da score 35, volume cresce fino a 1.0 a score 45)
+        if (elements.audioSources.drum) {
+            if (score >= 35 && score <= 45) {
+                const volume = (score - 35) * 0.1;
+                elements.audioSources.drum.gainNode.gain.value = volume;
+            } else if (score < 35) {
+                elements.audioSources.drum.gainNode.gain.value = 0;
+            }
         }
-
-        // Volume di drum (da 35 a 45)
-        if (state.score >= 35 && state.score <= 45) {
-            const volume = (state.score - 35) * 0.1;
-            if (elements.audioSources.drum) elements.audioSources.drum.gainNode.gain.value = volume;
-        }
-    }
-
-    function resumeAudioContextOnce() {
-        if (elements.audioContext && elements.audioContext.state === 'suspended') {
-            elements.audioContext.resume().then(() => {
-                console.log("AudioContext attivato dal primo click");
-            });
-        }
-        document.removeEventListener('click', resumeAudioContextOnce);
     }
 
     // =============================================
-    // 8. GESTIONE DEL GIOCO
+    // 9. GESTIONE DEL GIOCO
     // =============================================
     const messages = [
         { 
@@ -647,95 +600,65 @@ document.addEventListener("DOMContentLoaded", () => {
             color: "white"
         }
     ];
-    function calculateMessagePositions() {
-        messages.forEach(msg => {
-            delete msg.y;
-        });
-    }
 
     function handleJump(event) {
-        if (isMobileDevice() && event.type === 'touchstart') {
-            event.preventDefault();
-            event.stopPropagation();
-        }
-        if (state.isJumpButtonPressed) return;
-        state.isJumpButtonPressed = true;
-    
         if ((event.type === "keydown" && event.code === "Space") || 
             event.type === "click" || 
             event.type === "touchstart") {
             event.preventDefault();
             
-            // Aggiungi questa parte per gestire l'audio
+            // Attiva l'audio context al primo click se necessario
             if (!elements.audioContext) {
                 initAudioContext();
-                resumeAudioContext();
+            } else if (elements.audioContext.state === 'suspended') {
+                elements.audioContext.resume();
             }
             
             if (state.gamePaused) {
-                state.popupState++;
-                console.log(`Mostro messaggio ${state.popupState + 1}/${messages.length}`);
+                if (state.popupState === 0) {
+                    // Primo click - attiva audio
+                    startMareAudio(0.7);
+                }
                 
-                if (state.popupState >= messages.length) {
+                if (state.popupState < messages.length - 1) {
+                    state.popupState++;
+                    draw();
+                } else {
                     startGame();
                 }
-                draw(); // Chiama draw() senza parametri
-                
-                // Avvia l'audio mare al primo input
-                if (state.popupState === 1 && !elements.audioSources.mare) {
-                    startMareAudio();
-                }
-                
-                draw();
             } else if (!gameObjects.dino.isJumping) {
                 gameObjects.dino.isJumping = true;
                 gameObjects.dino.jumpSpeed = isMobileDevice() ? -12 : -18;
             }
         }
-    
-        setTimeout(() => {
-            state.isJumpButtonPressed = false;
-        }, 300);
-    }
-
-    function updatePopup() {
-        if (state.popupState === 1) {
-            console.log("Riproduzione audio mare.mp3");
-            startMareAudio();
-        }
     }
 
     function startGame() {
-        console.log("Gioco avviato");
+        console.log("Avvio gioco");
         state.gamePaused = false;
-        console.log("gamePaused impostato a:", state.gamePaused);
-    
-        cancelAnimationFrame(state.animationFrameId); // Cancella eventuali frame precedenti
+        state.startTime = performance.now();
+        
+        // Avvia tutti gli audio (con volume iniziale a 0)
+        startAdditionalAudio();
+        
+        // Imposta il volume iniziale del mare
+        if (elements.audioSources.mare) {
+            elements.audioSources.mare.gainNode.gain.value = 0.7;
+        }
+        
+        // Forza il ridimensionamento
+        resizeCanvas();
+        
+        // Avvia il game loop
+        cancelAnimationFrame(state.animationFrameId);
         state.animationFrameId = requestAnimationFrame(gameLoop);
-    }
-
-    function getIntegerScale() {
-        const targetRatio = CONFIG.REFERENCE_WIDTH / CONFIG.REFERENCE_HEIGHT;
-        const maxWidth = Math.floor(window.innerWidth * 0.9);
-        const maxHeight = Math.floor(window.innerHeight * 0.9);
-        
-        // Calcola la massima scala intera che rientra nello schermo
-        const scaleX = Math.floor(maxWidth / CONFIG.REFERENCE_WIDTH);
-        const scaleY = Math.floor(maxHeight / CONFIG.REFERENCE_HEIGHT);
-        const integerScale = Math.max(1, Math.min(scaleX, scaleY));
-        
-        return {
-            width: CONFIG.REFERENCE_WIDTH * integerScale,
-            height: CONFIG.REFERENCE_HEIGHT * integerScale
-        };
     }
 
     function resizeCanvas() {
         const isMobile = isMobileDevice();
         const targetRatio = CONFIG.REFERENCE_WIDTH / CONFIG.REFERENCE_HEIGHT;
-        const { width, height } = getIntegerScale();
         
-        // Dimensioni massime disponibili
+        // Calcola dimensioni massime disponibili
         const maxWidth = isMobile ? window.innerWidth : window.innerWidth * 0.9;
         const maxHeight = isMobile ? window.innerHeight : window.innerHeight * 0.9;
         
@@ -748,10 +671,11 @@ document.addEventListener("DOMContentLoaded", () => {
             canvasWidth = canvasHeight * targetRatio;
         }
     
-        elements.canvas.width = width;
-        elements.canvas.height = height;    
+        // Imposta dimensioni REALI del canvas
+        elements.canvas.width = canvasWidth;
+        elements.canvas.height = canvasHeight;
         
-        // Stili CSS
+        // Imposta dimensioni VISUALIZZATE (CSS)
         elements.canvas.style.width = `${canvasWidth}px`;
         elements.canvas.style.height = `${canvasHeight}px`;
         
@@ -760,17 +684,27 @@ document.addEventListener("DOMContentLoaded", () => {
         elements.canvas.style.left = '50%';
         elements.canvas.style.top = '50%';
         elements.canvas.style.transform = 'translate(-50%, -50%)';
-    
-        // Aggiorna posizioni elementi
-        gameObjects.dino.y = elements.canvas.height * (isMobileDevice() ? 0.6 : 0.65);
+        
+        // Aggiorna le posizioni degli elementi di gioco
         refreshAllSizes();
+        setTimeout(() => {
+            ensureDinaPosition();
+            console.log('Ricalcolo posizione Dina dopo resize');
+        }, 0);
+    
     }
 
-    function getObstacleInterval(scrollSpeed) {
-        const interval = CONFIG.INITIAL_OBSTACLE_INTERVAL - (scrollSpeed - 5) * 60;
-        return Math.max(interval, CONFIG.MIN_OBSTACLE_INTERVAL);
+    function refreshAllSizes() {
+        gameObjects.dino.width = scaleValue(100, true, { isDino: true });
+        gameObjects.dino.height = scaleValue(100, false, { isDino: true });
+        gameObjects.granchio.width = scaleValue(200, true, { isObstacle: true });
+        gameObjects.granchio.height = scaleValue(200, false, { isObstacle: true });
+        alignDinaWithDino();
     }
 
+    // =============================================
+    // 10. GESTIONE OSTACOLI
+    // =============================================
     function createNewPalm() {
         const type = Math.random() < 0.5 ? "palm" : "umbrella";
         const physics = CONFIG.OBSTACLE_PHYSICS[type];
@@ -831,37 +765,39 @@ document.addEventListener("DOMContentLoaded", () => {
         ];
     }
 
+    // =============================================
+    // 11. RENDERING
+    // =============================================
+    function drawImage(ctx, img, x, y, width, height) {
+        ctx.drawImage(
+            img, 
+            Math.round(x), 
+            Math.round(y), 
+            Math.round(width), 
+            Math.round(height)
+        );
+    }
+
     function drawPixelText(ctx, text, x, y, type, options = {}) {
-        // Dimensioni responsive
         const sizes = {
-            title: {
-                desktop: 24,
-                mobile: 12, // Riduci questo valore per mobile (es. da 16 a 14)
-                lineHeight: 1.2
-            },
-            default: {
-                desktop: 18,
-                mobile: 10, // Riduci questo valore per mobile (es. da 14 a 12)
-                lineHeight: 1.3
-            }
+            title: { desktop: 24, mobile: 12, lineHeight: 1.2 },
+            default: { desktop: 18, mobile: 10, lineHeight: 1.3 }
         };
     
         const config = sizes[type] || sizes.default;
         const fontSize = isMobileDevice() ? config.mobile : config.desktop;
         
-        // Stile del testo
-        elements.ctx.save();
-        elements.ctx.font = `${fontSize}px 'Press Start 2P', monospace`;
-        elements.ctx.fillStyle = options.color || "white";
-        elements.ctx.textAlign = options.align || "center";
-        elements.ctx.textBaseline = options.baseline || "middle";
+        ctx.save();
+        ctx.font = `${fontSize}px 'Press Start 2P', monospace`;
+        ctx.fillStyle = options.color || "white";
+        ctx.textAlign = options.align || "center";
+        ctx.textBaseline = options.baseline || "middle";
         
-        // Posizionamento speciale per mobile
-        const adjustedX = isMobileDevice() ? x * 0.8 : x; // Riduci l'offset X su mobile
-        const adjustedY = isMobileDevice() ? y * 1.2 : y; // Aumenta l'offset Y su mobile
+        const adjustedX = isMobileDevice() ? x * 0.8 : x;
+        const adjustedY = isMobileDevice() ? y * 1.2 : y;
         
-        elements.ctx.fillText(text, adjustedX, adjustedY);
-        elements.ctx.restore();
+        ctx.fillText(text, adjustedX, adjustedY);
+        ctx.restore();
     }
 
     function drawHeartMask(ctx, progress) {
@@ -894,350 +830,119 @@ document.addEventListener("DOMContentLoaded", () => {
         tempCtx.closePath();
         tempCtx.fill();
 
-        elements.ctx.drawImage(tempCanvas, 0, 0);
+        ctx.drawImage(tempCanvas, 0, 0);
     }
 
-    function drawImage(ctx, img, x, y, width, height) {
-        elements.ctx.drawImage(img, x, y, width, height);
-    }
-
-    function getRelativeSize(percent, isWidth = true) {
-        return isWidth 
-            ? elements.canvas.width * (percent / 100)
-            : elements.canvas.height * (percent / 100);
-    }
-
-    function drawGameElements(ctx) {
-        // 1. Disegna lo sfondo
+    function drawGameElements() {
+        // 1. Sfondo
         elements.ctx.save();
-        elements.ctx.drawImage(elements.images.sfondo, 0, 0, elements.images.sfondo.width, elements.images.sfondo.height, 0, 0, elements.canvas.width, elements.canvas.height);
+        elements.ctx.drawImage(
+            elements.images.sfondo, 
+            0, 0, elements.images.sfondo.width, elements.images.sfondo.height, 
+            0, 0, elements.canvas.width, elements.canvas.height
+        );
         elements.ctx.restore();
 
-        // 2. Disegna gli ostacoli
+        // 2. Ostacoli
         gameObjects.palms.forEach((obstacle) => {
-            if (obstacle.type === "palm") {
-                drawImage(elements.ctx, elements.images.palm, obstacle.x, obstacle.y, 
-                          obstacle.width, obstacle.graphicHeight);
-            } else if (obstacle.type === "umbrella") {
-                drawImage(elements.ctx, elements.images.umbrella, obstacle.x, obstacle.y, 
-                          obstacle.width, obstacle.graphicHeight);
-            }
+            const img = obstacle.type === "palm" ? elements.images.palm : elements.images.umbrella;
+            drawImage(elements.ctx, img, obstacle.x, obstacle.y, obstacle.width, obstacle.graphicHeight);
         });
 
-        // [DEBUG] 2.1 - Hitbox verticali proporzionali
-        //gameObjects.palms.forEach((obstacle) => {
-        //    const physics = CONFIG.OBSTACLE_PHYSICS[obstacle.type];
-        //    const hitboxWidth = obstacle.width * physics.hitboxWidthRatio;
-        //    const hitboxX = obstacle.x + (obstacle.width / 2) - (hitboxWidth / 2);
-        //    const hitboxTop = obstacle.y + obstacle.graphicHeight - obstacle.collisionHeight;
-            
-        //   ctx.fillStyle = obstacle.type === "palm" ? "rgba(255, 0, 0, 0.3)" : "rgba(0, 0, 255, 0.3)";
-        //    ctx.fillRect(hitboxX, hitboxTop, hitboxWidth, obstacle.collisionHeight);
-       // });
-
-        // 3. Disegna il granchio
+        // 3. Granchio
         if (gameObjects.granchio.visible) {
-            drawImage(elements.ctx, elements.images.granchio, gameObjects.granchio.x, gameObjects.granchio.y, 
-                      gameObjects.granchio.width, gameObjects.granchio.height);
+            drawImage(elements.ctx, elements.images.granchio, 
+                     gameObjects.granchio.x, gameObjects.granchio.y, 
+                     gameObjects.granchio.width, gameObjects.granchio.height);
         }
 
-        // 4. Disegna il castello
+        // 4. Castello
         if (gameObjects.castello.visible) {
-            drawImage(elements.ctx, elements.images.castello, gameObjects.castello.x, gameObjects.castello.y, 
-                      gameObjects.castello.width, gameObjects.castello.height);
+            drawImage(elements.ctx, elements.images.castello, 
+                     gameObjects.castello.x, gameObjects.castello.y, 
+                     gameObjects.castello.width, gameObjects.castello.height);
         }
         
-        // 5. Disegna il dinosauro
-        drawImage(elements.ctx, elements.images.dino, gameObjects.dino.x, gameObjects.dino.y, 
-                  gameObjects.dino.width, gameObjects.dino.height);
+        // 5. Dino
+        drawImage(elements.ctx, elements.images.dino, 
+            gameObjects.dino.x, gameObjects.dino.y, 
+            gameObjects.dino.width, gameObjects.dino.height);
 
-        // 6. Disegna Dina e gtr1
-        if (gameObjects.dina.visible) {
-            // Dina
+        // 6. Dina e gtr1 (solo se visibile e non nello stato hidden)
+        if (gameObjects.dina.visible && gameObjects.dina.state !== "hidden") {
             drawImage(elements.ctx, elements.images.dina, 
-                     gameObjects.dina.x, gameObjects.dina.y,
-                     gameObjects.dina.width, gameObjects.dina.height);
-            
-            // gtr1 (posizione relativa a Dina)
+                gameObjects.dina.x, gameObjects.dina.y,
+                gameObjects.dina.width, gameObjects.dina.height);
             drawImage(elements.ctx, elements.images.gtr1,
-                     gameObjects.dina.x + gameObjects.gtr1.offsetX,
-                     gameObjects.dina.y + gameObjects.gtr1.offsetY,
-                     gameObjects.gtr1.width, gameObjects.gtr1.height);
+                gameObjects.dina.x + gameObjects.gtr1.offsetX,
+                gameObjects.dina.y + gameObjects.gtr1.offsetY,
+                gameObjects.gtr1.width, gameObjects.gtr1.height);
         }    
 
-        const scoreX = elements.canvas.width * 0.05;
-        const scoreY = elements.canvas.height * 0.05;
-        const scoreSize = Math.min(elements.canvas.width, elements.canvas.height) * 0.04;
-        
-        elements.ctx.save();
-        elements.ctx.font = `bold ${scoreSize}px 'Press Start 2P'`;
-        elements.ctx.fillStyle = "white";
-        elements.ctx.textAlign = "left";
-        elements.ctx.textBaseline = "top";
-        elements.ctx.fillText(`Punteggio: ${state.score}`, scoreX, scoreY);
-        elements.ctx.restore();
+        // 7. Punteggio (solo se il gioco non è finito)
+        if (!state.gameEnded) {
+            const scoreX = elements.canvas.width * 0.05;
+            const scoreY = elements.canvas.height * 0.05;
+            const scoreSize = Math.min(elements.canvas.width, elements.canvas.height) * 0.04;
+   
+            elements.ctx.save();
+            elements.ctx.font = `bold ${scoreSize}px 'Press Start 2P'`;
+            elements.ctx.fillStyle = "white";
+            elements.ctx.textAlign = "left";
+            elements.ctx.textBaseline = "top";
+            elements.ctx.fillText(`Punteggio: ${state.score}`, scoreX, scoreY);
+            elements.ctx.restore();
+        }
+
+        // 8. Messaggi iniziali
         if(state.gamePaused && state.popupState < messages.length) {
             const currentMsg = messages[state.popupState];
-            
-            // Sfondo semitrasparente
-            elements.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-            const textWidth = elements.ctx.measureText(currentMsg.text).width;
-
-            // Testo
-            drawPixelText(elements.ctx, currentMsg.text, elements.canvas.width/2, currentMsg.y, currentMsg.type, {
-                color: currentMsg.color
-            });
+            drawPixelText(elements.ctx, currentMsg.text, 
+                         elements.canvas.width/2, currentMsg.y, 
+                         currentMsg.type, { color: currentMsg.color });
         }
-    }
-
-    function update(timestamp) {
-        const groundLevel = elements.canvas.height - gameObjects.dino.height - (isMobileDevice() ? 10 : 0);
-        // Controllo scorciatoia per impostare il punteggio a 49
-        if (state.aKeyPressed && (timestamp - state.aKeyPressStartTime) >= 3000) {
-            state.score = 49;
-            state.aKeyPressed = false; // Resetta per evitare ripetizioni
-            console.log("Scorciatoia attivata: punteggio impostato a 49");
-        }
-
-        if (!state.startTime) state.startTime = timestamp;
-
-        // Se il punteggio è >= 50, avvia la sequenza finale
-        if (state.score >= 50 && !state.gameEnded) {
-            state.showDina = true;
-            state.gameEnded = true;
-            gameObjects.dina.state = "hidden"; // Resetta lo stato
-            console.log("🎯 Score 50 raggiunto - Attivazione Dina");
-            
-            document.removeEventListener("keydown", handleJump);
-            elements.jumpButton.removeEventListener("click", handleJump);
-        }
-
-        // FASE 1: Entrata nello schermo
-        if (state.gameEnded && !state.finalAnimationStarted) {
-            startFinalAnimation();
-        }
-    
-        if (state.startMovingToCenter) {
-            // Muovi Dino (50px a destra)
-            gameObjects.dino.x = Math.min(
-                gameObjects.dino.x + gameObjects.dino.moveSpeed,
-                gameObjects.dino.finalTargetX
-            );
-    
-            // Muovi Dina (100px a sinistra)
-            gameObjects.dina.x = Math.max(
-                gameObjects.dina.x - gameObjects.dina.moveSpeed,
-                gameObjects.dina.finalTargetX
-            );
-    
-            if (gameObjects.dina.x <= gameObjects.dina.finalTargetX && !state.maskStartTime) {
-                console.log("Posizioni finali raggiunte");
-                state.maskStartTime = timestamp;
-            }
-        }
-
-        // Aggiorna la maschera
-        if (state.maskStartTime) {
-            const elapsedTime = timestamp - state.maskStartTime;
-
-            if (state.maskPauseTime && elapsedTime < state.maskPauseTime + CONFIG.MASK_PAUSE_DURATION) {
-                // Pausa
-            } else {
-                state.maskProgress = Math.min((elapsedTime - (state.maskPauseTime ? CONFIG.MASK_PAUSE_DURATION : 0)) / CONFIG.MASK_DURATION, 1);
-
-                if (state.maskProgress >= 0.5 && !state.maskPauseTime) {
-                    state.maskPauseTime = elapsedTime;
-                }
-            }
-        }
-
-        // Diminuisci il volume di mare.mp3
-        if (state.maskStartTime && elements.audioSources.mare) {
-            const elapsedTime = timestamp - state.maskStartTime;
-            const volume = Math.max(0, 0.75 - (elapsedTime / CONFIG.MASK_DURATION));
-            elements.audioSources.mare.gainNode.gain.value = volume;
-
-            if (state.maskProgress >= 1) {
-                elements.audioSources.mare.gainNode.gain.value = 0;
-                elements.audioSources.mare.source.stop();
-            }
-        }
-
-        // Aumenta la velocità
-        state.scrollSpeed += 0.001;
-
-        // Movimento del dinosauro
-        if (gameObjects.dino.isJumping) {
-            gameObjects.dino.y += gameObjects.dino.jumpSpeed;
-            gameObjects.dino.jumpSpeed += gameObjects.dino.gravity;
-            
-            // Terra ferma (mobile)
-            const groundLevel = isMobileDevice() 
-                ? elements.canvas.height - gameObjects.dino.height - scaleValue(20, false)
-                : scaleValue(250, false);
-            
-            if (gameObjects.dino.y >= groundLevel) {
-                gameObjects.dino.y = groundLevel;
-                gameObjects.dino.isJumping = false;
-            }
-        }
-
-        // Movimento degli ostacoli
-        gameObjects.palms.forEach((obstacle) => {
-            obstacle.x -= state.scrollSpeed;
-            
-            const physics = CONFIG.OBSTACLE_PHYSICS[obstacle.type];
-            const hitboxWidth = obstacle.width * physics.hitboxWidthRatio;
-            const hitboxX = obstacle.x + (obstacle.width - hitboxWidth)/2;
-            const hitboxTop = obstacle.y + obstacle.graphicHeight - physics.collisionHeight;
-            // Area dinosauro (riduci leggermente la hitbox del dino)
-            const dinoLeft = gameObjects.dino.x + gameObjects.dino.width * 0.2;
-            const dinoRight = gameObjects.dino.x + gameObjects.dino.width * 0.8;
-            const dinoBottom = gameObjects.dino.y + gameObjects.dino.height;
-
-            if (dinoRight > hitboxX && 
-                dinoLeft < hitboxX + hitboxWidth &&
-                dinoBottom > hitboxTop) {            
-                // Controlla collisione
-                if (gameObjects.dino.x + gameObjects.dino.width > hitboxX && 
-                    gameObjects.dino.x < hitboxX + hitboxWidth &&
-                    gameObjects.dino.y + gameObjects.dino.height > hitboxTop) {
-                    if (!obstacle.hit) {
-                        obstacle.hit = true;
-                        state.score -= 1; // Permette valori negativi
-                        console.log("Collisione! Punteggio:", state.score);
-                    }
-                }
-            }
-            
-            // Controlla se superato
-            if (!obstacle.passed && obstacle.x + obstacle.width < gameObjects.dino.x) {
-                obstacle.passed = true;
-                if (!obstacle.hit) {
-                    state.score += 1;
-                    console.log("Ostacolo superato! Punteggio:", state.score);
-                }
-            }
-        });
-
-        // Aggiorna i volumi audio
-        updateAudioVolumes();
-
-        // Rimuovi ostacoli usciti dallo schermo
-        gameObjects.palms = gameObjects.palms.filter(obstacle => 
-            obstacle.x + (obstacle.type === "palm" ? scaleValue(144 * 1.2 * 0.9) : scaleValue(144 * 0.8)) > 0
-        );
-
-        // Movimento del granchio e castello
-        if (gameObjects.granchio.visible) {
-            gameObjects.granchio.x -= state.scrollSpeed;
-            if (gameObjects.granchio.x + gameObjects.granchio.width < 0) {
-                gameObjects.granchio.visible = false;
-                state.lastGranchioTime = timestamp;
-            }
-        }
-
-        if (gameObjects.castello.visible) {
-            gameObjects.castello.x -= state.scrollSpeed;
-            if (gameObjects.castello.x + gameObjects.castello.width < 0) {
-                gameObjects.castello.visible = false;
-                state.lastCastelloTime = timestamp;
-            }
-        }
-
-        // Genera nuovi ostacoli
-        if (!state.gameEnded && timestamp - state.lastObstacleTime > getObstacleInterval(state.scrollSpeed)) {
-            if (Math.random() < state.pairProbability) {
-                const newObstacles = createPairOfObstacles();
-                gameObjects.palms.push(...newObstacles);
-                console.log("Generata coppia di ostacoli:", newObstacles);
-            } else {
-                const newObstacle = createNewPalm();
-                gameObjects.palms.push(newObstacle);
-                console.log("Generato ostacolo singolo:", newObstacle);
-            }
-            state.lastObstacleTime = timestamp;
-            
-            // Aumenta gradualmente la probabilità di coppie
-            state.pairProbability = Math.min(
-                CONFIG.MAX_PAIR_PROBABILITY, 
-                state.pairProbability + 0.02
-            );
-        }
-
-        // Genera granchi e castelli
-        if (!state.gameEnded && timestamp - state.startTime > 5000) {
-            if (state.isGranchioNext && !gameObjects.granchio.visible && !gameObjects.castello.visible && 
-                timestamp - state.lastGranchioTime > 6000) {
-                gameObjects.granchio.x = elements.canvas.width;
-                gameObjects.granchio.y = elements.canvas.height - gameObjects.granchio.height - scaleValue(50, false) + getMobileObstacleOffset();
-                gameObjects.granchio.visible = true;
-                state.isGranchioNext = false;
-                state.lastGranchioTime = timestamp;
-            } else if (!state.isGranchioNext && !gameObjects.castello.visible && !gameObjects.granchio.visible && 
-                       timestamp - state.lastCastelloTime > 6000) {
-                gameObjects.castello.x = elements.canvas.width;
-                gameObjects.castello.y = elements.canvas.height - gameObjects.castello.height - scaleValue(50, false) + getMobileObstacleOffset();
-                gameObjects.castello.visible = true;
-                state.isGranchioNext = true;
-                state.lastCastelloTime = timestamp;
-            }
-        }
-
-        // Avvia audio aggiuntivi
-        if (state.score >= 5 && state.audioBuffersLoaded && !elements.audioSources.gtrs) {
-            startAdditionalAudio();
-        }
-
-        if (state.gameEnded) {
-            handleFinalAnimation(timestamp);
-        }
-
-        if (state.score >= 50 && !state.showDina) {
-            state.showDina = true;
-            gameObjects.dina.x = gameObjects.dina.startX; // Reset posizione iniziale
-            console.log("🎯 Score 50 raggiunto - Attivazione Dina");
-        }
-        
-        updateDinaAnimation(timestamp);
-    
     }
 
     function draw() {
         if (!elements.ctx) {
             elements.ctx = elements.canvas.getContext('2d');
-            if (!elements.ctx) {
-                console.error("Impossibile ottenere il contesto del canvas");
-                return;
+            if (!elements.ctx) return;
+        }
+
+        if (state.maskStartTime && !state.maskComplete) {
+            const elapsed = performance.now() - state.maskStartTime;
+            state.maskProgress = Math.min(elapsed / CONFIG.MASK_DURATION, 1);
+            drawHeartMask(elements.ctx, state.maskProgress);
+            
+            if (state.maskProgress >= 1) {
+                state.maskComplete = true;
             }
         }
         
         elements.ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
         drawGameElements();
-        // Messaggi iniziali
 
+        // Messaggi iniziali
         if(state.gamePaused && state.popupState < messages.length) {
             const currentMsg = messages[state.popupState];
-    
-            // Sfondo semitrasparente
-            elements.ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
-            elements.ctx.fillRect(0, 0, elements.canvas.width, elements.canvas.height);
-    
-            // Stile del testo
-            const fontSize = isMobileDevice() ? 12 : 16;
-            const lineHeight = fontSize * 1.4;
+            const { size, lineHeight } = getResponsiveTextSizes(currentMsg.type);
             const maxWidth = elements.canvas.width * 0.8;
             const x = elements.canvas.width / 2;
             let y = elements.canvas.height / 3;
-    
-            elements.ctx.font = `bold ${fontSize}px 'Press Start 2P'`;
-            elements.ctx.fillStyle = "white";
+        
+            // Sfondo semitrasparente
+            elements.ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+            elements.ctx.fillRect(0, 0, elements.canvas.width, elements.canvas.height);
+
+            // Testo
+            elements.ctx.font = `bold ${size}px 'Press Start 2P'`;
+            elements.ctx.fillStyle = currentMsg.color || "white";
             elements.ctx.textAlign = "center";
-    
+        
             // Divide il testo in righe
             const words = currentMsg.text.split(' ');
             let line = '';
-    
+        
             for (let i = 0; i < words.length; i++) {
                 const testLine = line + words[i] + ' ';
                 const metrics = elements.ctx.measureText(testLine);
@@ -1250,13 +955,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             }
             elements.ctx.fillText(line.trim(), x, y);
-    
-            // Aggiungi istruzioni per continuare
-            y += lineHeight * 2;
-            const continueText = isMobileDevice() ? "Tocca per continuare" : "Premi SPAZIO per continuare";
-            elements.ctx.fillText(continueText, x, y);
+        
+            // Istruzioni per continuare
+            const continueY = elements.canvas.height * 0.75; // Fisso a 3/4 dello schermo
+            const continueText = isMobileDevice() ? "TOCCA PER CONTINUARE" : "PREMI SPAZIO PER CONTINUARE";
+            
+            elements.ctx.fillText(continueText, x, continueY);
         }
-    
+
         // Maschera a cuore
         if (state.maskProgress > 0) {
             drawHeartMask(elements.ctx, state.maskProgress);
@@ -1267,316 +973,592 @@ document.addEventListener("DOMContentLoaded", () => {
     
         // Fine gioco
         if (state.maskProgress >= 1 && !state.coverVideoPlayed) {
-            console.log("Maschera completamente chiusa - Nascondi la scritta e il tasto 'Salta'");
-            state.coverVideoPlayed = true;
+            showEndGameVideo();
+        }
+    }
+
+    function showEndGameVideo() {
+        state.coverVideoPlayed = true;
+
+        if (isMobileDevice()) {
+            elements.coverVideo.style.width = "auto";
+            elements.coverVideo.style.height = "80vh";
+            elements.coverVideo.style.maxWidth = "100%";
+        } else {
+            elements.coverVideo.style.width = `${Math.min(window.innerWidth * 0.9, elements.canvas.width)}px`;
+            elements.coverVideo.style.height = "auto";
+        }
     
-            // Imposta le dimensioni per mobile
-            if (isMobileDevice()) {
-                elements.coverVideo.style.width = "auto";
-                elements.coverVideo.style.height = "80vh";
-                elements.coverVideo.style.maxWidth = "100%";
-            } else {
-                elements.coverVideo.style.width = `${Math.min(window.innerWidth * 0.9, elements.canvas.width)}px`;
-                elements.coverVideo.style.height = "auto";
+        elements.coverVideo.style.display = "block";
+        elements.coverVideo.style.opacity = "0";
+        elements.coverVideo.load();
+        
+        setTimeout(() => {
+            elements.coverVideo.style.opacity = "1";
+            elements.coverVideo.play().catch(error => {
+                console.log("Errore riproduzione video:", error);
+                elements.coverVideo.muted = true;
+                elements.coverVideo.play().catch(e => console.log("Errore anche con muted:", e));
+            });
+        }, 100);
+
+        elements.prizeMessage.container.style.display = "flex";
+        elements.coverVideo.onended = handleVideoEnded;
+    }
+
+    function handleVideoEnded() {
+        elements.coverVideo.style.opacity = "0";
+        setTimeout(() => {
+            elements.coverVideo.pause();
+            elements.coverVideo.currentTime = 0;
+            elements.coverVideo.style.display = "none";
+        }, 1000);
+    
+        if (elements.audioSources.mare) {
+            fadeOutAudio(elements.audioSources.mare, 1);
+        }
+        if (elements.audioSources.gtrs) fadeOutAudio(elements.audioSources.gtrs, 1);
+        if (elements.audioSources.keys) fadeOutAudio(elements.audioSources.keys, 1);
+        if (elements.audioSources.bass) fadeOutAudio(elements.audioSources.bass, 1);
+        if (elements.audioSources.drum) fadeOutAudio(elements.audioSources.drum, 1);
+    }
+
+    // =============================================
+    // 12. LOGICA DI GIOCO
+    // =============================================
+    function update(timestamp) {
+        if (!state.startTime) state.startTime = timestamp;
+
+        // Solo se il gioco non è finito, aumenta la velocità
+        if (!state.gameEnded) {
+            state.scrollSpeed += 0.001;
+        }
+
+        // Scorciatoia debug
+        if (state.aKeyPressed && (timestamp - state.aKeyPressStartTime) >= 2000) {
+            state.score = 49;
+            state.aKeyPressed = false;
+        }
+
+        if (state.score >= 5 && state.audioBuffersLoaded && !elements.audioSources.gtrs) {
+            startAdditionalAudio();
+        }
+
+        // Aggiorna audio
+        updateAudioVolumes();
+
+        // Punteggio 50
+        if (state.score >= 50 && !state.gameEnded) {
+            state.gameEnded = true;
+            state.showDina = true;
+            alignDinaWithDino();
+
+            // Impedisci la generazione di nuovi ostacoli
+            state.lastObstacleTime = Infinity;
+                      
+            // Avvia l'animazione di Dina dopo un breve ritardo
+            gameObjects.dina.visible = true;
+            gameObjects.dina.state = "entering";
+            gameObjects.dina.x = elements.canvas.width + scaleValue(100);
+
+            gameObjects.palms.forEach(obstacle => obstacle.hit = true);
+            gameObjects.granchio.visible = false;
+            gameObjects.castello.visible = false;
+        }
+
+        // Animazione finale
+        if (state.gameEnded) {
+            // Gestisci qui TUTTO il movimento finale
+            if (gameObjects.dina.state === "movingToCenter") {
+                // Muovi Dino verso il centro (con velocità proporzionale alla distanza)
+                gameObjects.dino.x = Math.min(
+                    gameObjects.dino.x + gameObjects.dino.moveSpeed * 1.5, // Aumenta la velocità
+                    gameObjects.dino.finalTargetX
+                );
+        
+                // Muovi Dina verso il centro
+                gameObjects.dina.x = Math.max(
+                    gameObjects.dina.x - gameObjects.dina.moveSpeed * 1.5,
+                    gameObjects.dina.finalTargetX
+                );
+        
+                // Avvia la maschera SOLO quando entrambi sono centrati
+                if (Math.abs(gameObjects.dino.x - gameObjects.dino.finalTargetX) < 2 &&
+                    Math.abs(gameObjects.dina.x - gameObjects.dina.finalTargetX) < 2) {
+                    gameObjects.dina.state = "centered";
+                    state.maskStartTime = performance.now(); // Unico punto di attivazione!
+                    console.log("Dino e Dina centrati - maschera avviata");
+                }
             }
-        
-            elements.coverVideo.style.display = "block";
-            elements.coverVideo.style.opacity = "0";
-            
-            // Forza il caricamento su mobile
-            elements.coverVideo.load();
-            
-            setTimeout(() => {
-                elements.coverVideo.style.opacity = "1";
-                
-                // Gestione speciale per la riproduzione su mobile
-                const playPromise = elements.coverVideo.play();
-                
-                if (playPromise !== undefined) {
-                    playPromise.catch(error => {
-                        console.log("Errore riproduzione video:", error);
-                        // Soluzione alternativa per iOS
-                        elements.coverVideo.muted = true;
-                        elements.coverVideo.play().catch(e => console.log("Errore anche con muted:", e));
-                    });
-                }
-            }, 100);
-        
-            // Mostra il messaggio dopo 1 secondo
-            setTimeout(() => {
-                elements.prizeMessage.container.style.display = "flex";
-            }, 1000);
+        }
+
+        // Aggiorna maschera
+        if (state.gameEnded && gameObjects.dina.state === "centered" && !state.maskStartTime) {
+            state.maskStartTime = performance.now();
+            console.log("Maschera avviata a:", state.maskStartTime);
+            // Blocca tutti gli ostacoli
+            gameObjects.palms = [];
+            gameObjects.granchio.visible = false;
+            gameObjects.castello.visible = false;
+        }
+
+        // Aumenta velocità
+        state.scrollSpeed += 0.001;
+
+        // Movimento dino
+        updateDinoMovement();
+
+        // Movimento ostacoli
+        updateObstacles(timestamp);
+
+        // Genera nuovi ostacoli
+        generateNewObstacles(timestamp);
+
+        // Animazione Dina
+        updateDinaAnimation(timestamp);
+    }
+
+    function updateFinalAnimation() {
+        if (!state.gameEnded) return;
     
-            elements.coverVideo.onended = () => {
-                elements.coverVideo.style.opacity = "0";
-                setTimeout(() => {
-                    elements.coverVideo.pause();
-                    elements.coverVideo.currentTime = 0;
-                    elements.coverVideo.style.display = "none";
-                }, 1000);
+        // Muovi Dino verso il centro
+        if (gameObjects.dino.x < gameObjects.dino.finalTargetX) {
+            gameObjects.dino.x += gameObjects.dino.moveSpeed;
+        }
+    
+        // Muovi Dina verso il centro
+        if (gameObjects.dina.state === "movingToCenter" && 
+            gameObjects.dina.x > gameObjects.dina.finalTargetX) {
+            gameObjects.dina.x -= gameObjects.dina.moveSpeed;
+        }
+    
+        // Quando entrambi sono centrati, avvia la maschera
+        if (Math.abs(gameObjects.dino.x - gameObjects.dino.finalTargetX) < 2 &&
+            Math.abs(gameObjects.dina.x - gameObjects.dina.finalTargetX) < 2 &&
+            !state.maskStartTime) {
+            state.maskStartTime = performance.now();
+            gameObjects.dina.state = "centered";
+        }
+    }
+
+    function updateMaskAnimation(timestamp) {
+        // Se la maschera è già completa, non fare nulla
+        if (state.maskProgress >= 1) return;
+        state.maskComplete = true;
+        // Calcola il tempo trascorso
+        const elapsedTime = timestamp - state.maskStartTime;
+    
+        // Gestione delle fasi dell'animazione
+        if (state.maskPauseTime) {
+            // Siamo in fase di pausa
+            if (elapsedTime < state.maskPauseTime + CONFIG.MASK_PAUSE_DURATION) {
+                return; // Mantieni la pausa
+            }
+            // Calcola il progresso dopo la pausa
+            state.maskProgress = Math.min(
+                (elapsedTime - CONFIG.MASK_PAUSE_DURATION) / 
+                (CONFIG.MASK_DURATION - CONFIG.MASK_PAUSE_DURATION), 
+                1
+            );
+        } else {
+            // Fase attiva dell'animazione
+            state.maskProgress = Math.min(elapsedTime / (CONFIG.MASK_DURATION * 0.5), 1);
             
-                if (elements.audioSources.mare) {
-                    elements.audioSources.mare.gainNode.gain.setValueAtTime(
-                        elements.audioSources.mare.gainNode.gain.value, 
-                        elements.audioContext.currentTime
-                    );
-                    elements.audioSources.mare.gainNode.gain.linearRampToValueAtTime(
-                        0, 
-                        elements.audioContext.currentTime + 1
-                    );
-                    elements.audioSources.mare.source.stop();
+            // Attiva la pausa quando raggiunge il 50%
+            if (state.maskProgress >= 0.5 && !state.maskPauseTime) {
+                state.maskPauseTime = timestamp;
+            }
+        }
+    
+        // Completa l'animazione
+        if (state.maskProgress >= 1) {
+            // Ferma solo gli altri audio, non il mare
+            if (elements.audioSources.gtrs) fadeOutAudio(elements.audioSources.gtrs, 1);
+            if (elements.audioSources.keys) fadeOutAudio(elements.audioSources.keys, 1);
+            if (elements.audioSources.bass) fadeOutAudio(elements.audioSources.bass, 1);
+            if (elements.audioSources.drum) fadeOutAudio(elements.audioSources.drum, 1);
+        }
+    }
+
+    function updateDinoMovement() {
+        if (gameObjects.dino.isJumping) {
+            gameObjects.dino.y += gameObjects.dino.jumpSpeed;
+            gameObjects.dino.jumpSpeed += gameObjects.dino.gravity;
+            
+            // Usa groundLevel memorizzato invece di ricalcolarlo
+            if (gameObjects.dino.y >= gameObjects.dino.groundLevel) {
+                gameObjects.dino.y = gameObjects.dino.groundLevel;
+                gameObjects.dino.isJumping = false;
+            }
+        } else {
+            // Mantiene il dinosauro a terra quando non sta saltando
+            gameObjects.dino.y = gameObjects.dino.groundLevel;
+        }
+    }
+
+    function updateObstacles(timestamp) {
+        // Gli ostacoli si muovono sempre, anche dopo la fine del gioco
+        gameObjects.palms.forEach((obstacle) => {
+            obstacle.x -= state.scrollSpeed;
+            
+            // Solo controllo collisioni se il gioco non è finito
+            if (!state.gameEnded) {
+                const physics = CONFIG.OBSTACLE_PHYSICS[obstacle.type];
+                const hitboxWidth = obstacle.width * physics.hitboxWidthRatio;
+                const hitboxX = obstacle.x + (obstacle.width - hitboxWidth)/2;
+                const hitboxTop = obstacle.y + obstacle.graphicHeight - physics.collisionHeight;
+                
+                const dinoLeft = gameObjects.dino.x + gameObjects.dino.width * 0.2;
+                const dinoRight = gameObjects.dino.x + gameObjects.dino.width * 0.8;
+                const dinoBottom = gameObjects.dino.y + gameObjects.dino.height;
+    
+                if (dinoRight > hitboxX && 
+                    dinoLeft < hitboxX + hitboxWidth &&
+                    dinoBottom > hitboxTop && 
+                    !obstacle.hit) {
+                    obstacle.hit = true;
+                    state.score -= 1;
                 }
-                if (elements.audioSources.gtrs) fadeOutAudio(elements.audioSources.gtrs, 1);
-                if (elements.audioSources.keys) fadeOutAudio(elements.audioSources.keys, 1);
-                if (elements.audioSources.bass) fadeOutAudio(elements.audioSources.bass, 1);
-                if (elements.audioSources.drum) fadeOutAudio(elements.audioSources.drum, 1);
-            };
+                
+                if (!obstacle.passed && obstacle.x + obstacle.width < gameObjects.dino.x) {
+                    obstacle.passed = true;
+                    if (!obstacle.hit) state.score += 1;
+                }
+            }
+        });
+    
+        // Rimuovi ostacoli usciti dallo schermo
+        gameObjects.palms = gameObjects.palms.filter(obstacle => 
+            obstacle.x + obstacle.width > -50
+        );
+    
+        // Movimento granchio e castello (continua anche dopo la fine del gioco)
+        if (gameObjects.granchio.visible) {
+            gameObjects.granchio.x -= state.scrollSpeed;
+            if (gameObjects.granchio.x + gameObjects.granchio.width < 0) {
+                gameObjects.granchio.visible = false;
+            }
+        }
+    
+        if (gameObjects.castello.visible) {
+            gameObjects.castello.x -= state.scrollSpeed;
+            if (gameObjects.castello.x + gameObjects.castello.width < 0) {
+                gameObjects.castello.visible = false;
+            }
+        }
+    }
+
+    //function updateSpecialObstacles(timestamp) {
+    //    if (gameObjects.granchio.visible) {
+    //        gameObjects.granchio.x -= state.scrollSpeed;
+    //        if (gameObjects.granchio.x + gameObjects.granchio.width < 0) {
+    //            gameObjects.granchio.visible = false;
+    //            state.lastGranchioTime = timestamp;
+    //        }
+    //    }
+
+    //    if (gameObjects.castello.visible) {
+    //        gameObjects.castello.x -= state.scrollSpeed;
+    //        if (gameObjects.castello.x + gameObjects.castello.width < 0) {
+    //            gameObjects.castello.visible = false;
+    //            state.lastCastelloTime = timestamp;
+    //        }
+    //    }
+    //}
+
+    function generateNewObstacles(timestamp) {
+        if (!state.gameEnded && timestamp - state.lastObstacleTime > getObstacleInterval(state.scrollSpeed)) {
+            if (Math.random() < state.pairProbability) {
+                gameObjects.palms.push(...createPairOfObstacles());
+            } else {
+                gameObjects.palms.push(createNewPalm());
+            }
+            state.lastObstacleTime = timestamp;
+            
+            state.pairProbability = Math.min(
+                CONFIG.MAX_PAIR_PROBABILITY, 
+                state.pairProbability + 0.02
+            );
+        }
+
+        // Genera granchi e castelli
+        if (!state.gameEnded && timestamp - state.startTime > 5000) {
+            if (state.isGranchioNext && !gameObjects.granchio.visible && !gameObjects.castello.visible && 
+                timestamp - state.lastGranchioTime > 6000) {
+                spawnGranchio();
+            } else if (!state.isGranchioNext && !gameObjects.castello.visible && !gameObjects.granchio.visible && 
+                       timestamp - state.lastCastelloTime > 6000) {
+                spawnCastello();
+            }
+        }
+    }
+
+    function spawnGranchio() {
+        gameObjects.granchio.x = elements.canvas.width;
+        gameObjects.granchio.y = elements.canvas.height - gameObjects.granchio.height - scaleValue(50, false) + getMobileObstacleOffset();
+        gameObjects.granchio.visible = true;
+        state.isGranchioNext = false;
+        state.lastGranchioTime = performance.now();
+    }
+
+    function spawnCastello() {
+        gameObjects.castello.x = elements.canvas.width;
+        gameObjects.castello.y = elements.canvas.height - gameObjects.castello.height - scaleValue(50, false) + getMobileObstacleOffset();
+        gameObjects.castello.visible = true;
+        state.isGranchioNext = true;
+        state.lastCastelloTime = performance.now();
+    }
+
+    function updateDinaAnimation(timestamp) {
+        if (!state.showDina || state.dinaAlreadySpawned) return;
+        
+        // Imposta il flag per evitare generazioni multiple
+        state.dinaAlreadySpawned = true;
+    
+        switch (gameObjects.dina.state) {
+            case "hidden":
+                gameObjects.dina.visible = true;
+                gameObjects.dina.x = elements.canvas.width + scaleValue(100);
+                gameObjects.dina.state = "entering";
+                break;
+    
+            case "entering":
+                gameObjects.dina.x -= gameObjects.dina.entrySpeed;
+                
+                if (gameObjects.dina.x <= gameObjects.dina.entryTargetX) {
+                    gameObjects.dina.state = "pausing";
+                    state.dinaPauseTime = timestamp;
+                }
+                break;
+    
+            case "pausing":
+                // Pausa di 1 secondo prima di muoversi al centro
+                if (timestamp - state.dinaPauseTime > 1000) {
+                    gameObjects.dina.state = "movingToCenter";
+                }
+                break;
+    
+            case "movingToCenter":
+                // Muovi Dina verso la posizione finale
+                gameObjects.dina.x = Math.max(
+                    gameObjects.dina.x - gameObjects.dina.moveSpeed,
+                    gameObjects.dina.finalTargetX
+                );
+                
+                // Muovi anche Dino verso il centro
+                gameObjects.dino.x = Math.min(
+                    gameObjects.dino.x + gameObjects.dino.moveSpeed,
+                    gameObjects.dino.finalTargetX
+                );
+                
+                // Quando sono entrambi centrati, avvia la maschera
+                if (Math.abs(gameObjects.dino.x - gameObjects.dino.finalTargetX) < 2 &&
+                    Math.abs(gameObjects.dina.x - gameObjects.dina.finalTargetX) < 2 &&
+                    !state.maskStartTime) {
+                    state.maskStartTime = timestamp;
+                    gameObjects.dina.state = "centered";
+                }
+                break;
         }
     }
 
     function setupPrizeMessage() {
-        elements.prizeMessage.container.className = "prize-message-container";
         const isMobile = isMobileDevice();
-        elements.prizeMessage.text.style.fontSize = isMobile ? "14px" : "24px";
-        elements.prizeMessage.text.style.padding = isMobile ? "0 20px" : "0";
-        elements.prizeMessage.text.style.marginBottom = isMobile ? "15px" : "20px";   
-        elements.prizeMessage.button.style.fontSize = isMobile ? "12px" : "18px";
-        elements.prizeMessage.button.style.padding = isMobile ? "8px 16px" : "10px 20px";
         
-        // Aggiungi questo per gestire meglio il touch su mobile
-        elements.prizeMessage.button.style.webkitTapHighlightColor = "transparent";
-        elements.prizeMessage.button.style.userSelect = "none";
-
-        // Configura il contenitore del messaggio
-        elements.prizeMessage.container.style.position = "fixed";
-        elements.prizeMessage.container.style.top = "auto";
-        elements.prizeMessage.container.style.bottom = "20px";
-        elements.prizeMessage.container.style.left = "50%";
-        elements.prizeMessage.container.style.transform = "translateX(-50%)";
-        elements.prizeMessage.container.style.display = "none";
-        elements.prizeMessage.container.style.flexDirection = "column";
-        elements.prizeMessage.container.style.alignItems = "center";
-        elements.prizeMessage.container.style.justifyContent = "center";
-        elements.prizeMessage.container.style.zIndex = "1000";
-        elements.prizeMessage.container.style.textAlign = "center";
-        elements.prizeMessage.container.style.pointerEvents = "auto";
-        elements.prizeMessage.container.style.width = "100%";
-        elements.prizeMessage.container.style.background = "none";
-        elements.prizeMessage.container.style.border = "none";
+        elements.prizeMessage.container.className = "prize-message-container";
+        elements.prizeMessage.text.className = "popup-text";
+        elements.prizeMessage.button.className = "prize-button";
         
-        // Configura il pulsante
+        // Configurazione del pulsante
         elements.prizeMessage.button.textContent = "E ora?";
         elements.prizeMessage.button.href = "https://distrokid.com/hyperfollow/inox209/una-nuova-scusa";
         elements.prizeMessage.button.target = "_blank";
-        elements.prizeMessage.button.style.color = "#00ffff";
-        elements.prizeMessage.button.style.fontFamily = "'Press Start 2P', monospace";
-        elements.prizeMessage.button.style.fontSize = isMobileDevice() ? "14px" : "18px";
-        elements.prizeMessage.button.style.textDecoration = "none";
-        elements.prizeMessage.button.style.border = "2px solid #00ffff";
+        
+        // Nascondi inizialmente il container
+        elements.prizeMessage.container.style.display = "none";
+        
+        // Aggiungi stili CSS per posizionarlo correttamente
+        elements.prizeMessage.container.style.position = "fixed";
+        elements.prizeMessage.container.style.bottom = "20px";
+        elements.prizeMessage.container.style.left = "50%";
+        elements.prizeMessage.container.style.transform = "translateX(-50%)";
+        elements.prizeMessage.container.style.zIndex = "1000";
+        elements.prizeMessage.container.style.flexDirection = "column";
+        elements.prizeMessage.container.style.alignItems = "center";
+        elements.prizeMessage.container.style.gap = "20px";
+        
+        // Stili per il pulsante
         elements.prizeMessage.button.style.padding = "10px 20px";
         elements.prizeMessage.button.style.borderRadius = "5px";
-        elements.prizeMessage.button.style.cursor = "pointer";
-        elements.prizeMessage.button.style.transition = "all 0.3s";
-        elements.prizeMessage.button.style.textShadow = "1px 1px 2px rgba(0, 0, 0, 0.8)"; // Aggiunto ombreggiatura
         elements.prizeMessage.button.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
-        elements.prizeMessage.button.style.margin = "0 auto";
+        elements.prizeMessage.button.style.color = "#00ffff";
+        elements.prizeMessage.button.style.border = "2px solid #00ffff";
+        elements.prizeMessage.button.style.fontFamily = "'Press Start 2P', cursive";
+        elements.prizeMessage.button.style.fontSize = isMobile ? "12px" : "14px";
+        elements.prizeMessage.button.style.textDecoration = "none";
+        elements.prizeMessage.button.style.transition = "all 0.3s";
         
-        // Effetto hover per il pulsante
+        // Aggiungi gli elementi al container
+        elements.prizeMessage.container.appendChild(elements.prizeMessage.text);
+        elements.prizeMessage.container.appendChild(elements.prizeMessage.button);
+        document.body.appendChild(elements.prizeMessage.container);
+        
+        // Gestione eventi del pulsante
         elements.prizeMessage.button.addEventListener("mouseenter", () => {
             elements.prizeMessage.button.style.backgroundColor = "#00ffff";
             elements.prizeMessage.button.style.color = "black";
-            elements.prizeMessage.button.style.textShadow = "none";
         });
         
         elements.prizeMessage.button.addEventListener("mouseleave", () => {
             elements.prizeMessage.button.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
             elements.prizeMessage.button.style.color = "#00ffff";
-            elements.prizeMessage.button.style.textShadow = "1px 1px 2px rgba(0, 0, 0, 0.8)";
         });
-        
-        // Aggiungi gli elementi al DOM
-        elements.prizeMessage.container.appendChild(elements.prizeMessage.text);
-        elements.prizeMessage.container.appendChild(elements.prizeMessage.button);
-        document.body.appendChild(elements.prizeMessage.container);
-
-        if(isMobileDevice()) {
-            elements.prizeMessage.container.style.top = "75%";
-            elements.prizeMessage.container.style.padding = "10px";
-            elements.prizeMessage.button.style.fontSize = "10px";
-            elements.prizeMessage.button.style.padding = "6px 12px";
-            elements.prizeMessage.text.style.fontSize = "10px";
-            elements.prizeMessage.text.style.lineHeight = "1.4";
-            elements.prizeMessage.text.style.marginBottom = "10px";
-        }
-    }
-    
-    function gameLoop(timestamp) {
-        // Modifica questa funzione così:
-        if (!state.startTime) state.startTime = timestamp;
-        // Esegui sempre update e draw, ma controlla gamePaused in update
-        update(timestamp);
-        draw();
-        
-        // Continua il loop solo se il gioco non è in pausa
-        if (!state.gamePaused) {
-            state.animationFrameId = requestAnimationFrame(gameLoop);
-        }
     }
 
+    // =============================================
+    // 13. ANIMAZIONI FINALI
+    // =============================================
     function startFinalAnimation() {
         if (state.finalAnimationStarted) return;
         state.finalAnimationStarted = true;
     
         gameObjects.dina.visible = true;
         gameObjects.dina.x = elements.canvas.width - scaleValue(150); 
-        console.log("Posizionate a destra");
     
         setTimeout(() => {
             state.startMovingToCenter = true;
-            console.log("Inizio movimento");
         }, 2000);
     }
 
     function handleFinalAnimation(timestamp) {
-        // FASE 1: Entrata dallo schermo
-        if (!state.dinaEntryComplete && gameObjects.dina.x > gameObjects.dina.entryTargetX) {
-            gameObjects.dina.x -= gameObjects.dina.entrySpeed;
-            return;
-        }
+        if (!state.gameEnded) return;
     
-        // FASE 2: Prima fermata
-        if (!state.dinaEntryComplete) {
-            state.dinaEntryComplete = true;
-            state.dinaPauseStartTime = timestamp;
-            console.log("Dina entrata completamente, pausa...");
-            return;
-        }
-    
-        // FASE 3: Dopo 2 secondi di pausa, muovi verso il centro
-        if (state.dinaEntryComplete && !state.dinaMovingToCenter && 
-            timestamp - state.dinaPauseStartTime > 2000) {
-            state.dinaMovingToCenter = true;
-            console.log("Inizio movimento verso il centro");
-        }
-    
-        // FASE 4: Movimento verso il centro
-        if (state.dinaMovingToCenter) {
-            // Muovi Dino a destra
-            if (gameObjects.dino.x < gameObjects.dino.finalTargetX) {
-                gameObjects.dino.x += gameObjects.dino.moveSpeed;
-            }
-    
-            // Muovi Dina a sinistra
-            if (gameObjects.dina.x > gameObjects.dina.finalTargetX) {
-                gameObjects.dina.x -= gameObjects.dina.moveSpeed;
-            }
-    
-            // Verifica completamento
-            if (gameObjects.dino.x >= gameObjects.dino.finalTargetX && 
-                gameObjects.dina.x <= gameObjects.dina.finalTargetX && 
-                !state.maskStartTime) {
-                state.maskStartTime = timestamp;
-                console.log("Posizioni finali raggiunte");
-                elements.jumpButton.classList.add('hidden');
-                document.getElementById('desktopMessage').classList.add('hidden');
-            }
-        }
-    }
-
-    function updateDinaAnimation(timestamp) {
-    if (!state.showDina) return;
-
-    switch (gameObjects.dina.state) {
-        case "hidden":
-            gameObjects.dina.visible = true;
-            gameObjects.dina.state = "entering";
-            gameObjects.dina.x = gameObjects.dina.startX;
-            console.log("Dina: Inizio entrata da destra");
-            break;
-
-        case "entering":
+        // Fase 1: Dina entra nello schermo
+        if (gameObjects.dina.state === "entering") {
             gameObjects.dina.x -= gameObjects.dina.entrySpeed;
             
             if (gameObjects.dina.x <= gameObjects.dina.entryTargetX) {
-                gameObjects.dina.state = "pausing";
-                gameObjects.dina.pauseStartTime = timestamp;
-                console.log("Dina: Entrata completata, pausa di 2 secondi");
+                gameObjects.dina.state = "waiting";
+                state.dinaWaitTime = timestamp;
             }
-            break;
-
-        case "pausing":
-            if (timestamp - gameObjects.dina.pauseStartTime >= 2000) {
-                gameObjects.dina.state = "movingToCenter";
-                console.log("Dina: Fine pausa, inizio movimento al centro");
-            }
-            break;
-
-        case "movingToCenter":
+        }
+        
+        // Fase 2: Breve pausa
+        else if (gameObjects.dina.state === "waiting" && 
+                 timestamp - state.dinaWaitTime > 1000) {
+            gameObjects.dina.state = "movingToCenter";
+        }
+        
+        // Fase 3: Muovi entrambi al centro
+        else if (gameObjects.dina.state === "movingToCenter") {
+            // Muovi Dino verso il centro
             if (gameObjects.dino.x < gameObjects.dino.finalTargetX) {
                 gameObjects.dino.x += gameObjects.dino.moveSpeed;
             }
-
+            
+            // Muovi Dina verso il centro
             if (gameObjects.dina.x > gameObjects.dina.finalTargetX) {
                 gameObjects.dina.x -= gameObjects.dina.moveSpeed;
             }
-
-            if (Math.abs(gameObjects.dino.x - gameObjects.dino.finalTargetX) < 1 && 
-                Math.abs(gameObjects.dina.x - gameObjects.dina.finalTargetX) < 1) {
-                gameObjects.dina.state = "centered";
+            
+            // Quando sono centrati, avvia la maschera
+            if (Math.abs(gameObjects.dino.x - gameObjects.dino.finalTargetX) < 2 &&
+                Math.abs(gameObjects.dina.x - gameObjects.dina.finalTargetX) < 2 &&
+                !state.maskStartTime) {
                 state.maskStartTime = timestamp;
-                console.log("Dina: Centratura completata");
-                elements.jumpButton.classList.add('hidden');
-                document.getElementById('desktopMessage').classList.add('hidden');
+                gameObjects.dina.state = "centered";
             }
-            break;
-    }
-    }
-
-    function setupVideoForMobile() {
-        if (!isMobileDevice()) return;
-        
-        // Gestione speciale per iOS
-        document.body.addEventListener('click', function videoPlayHandler() {
-            if (state.coverVideoPlayed && elements.coverVideo.style.display === "block") {
-                elements.coverVideo.muted = false; // Riattiva l'audio se necessario
-                elements.coverVideo.play().catch(e => console.log("Errore play:", e));
-            }
-            document.body.removeEventListener('click', videoPlayHandler);
-        }, { once: true });
-        
-        // Ridimensionamento dinamico per mobile
-        window.addEventListener('resize', function() {
-            if (state.coverVideoPlayed) {
-                elements.coverVideo.style.height = "80vh";
-                elements.coverVideo.style.maxWidth = "100%";
-            }
-        });
+        }
     }
 
     // =============================================
-    // 9. INIZIALIZZAZIONE
+    // 14. GAME LOOP
+    // =============================================
+    function gameLoop(timestamp) {
+        if (!state.startTime) state.startTime = timestamp;
+        
+        update(timestamp);
+        handleFinalAnimation(timestamp);
+        draw();
+        updateObstacles(timestamp);
+        updateDinaAnimation(timestamp);
+        ensureDinaPosition();
+
+        if (!state.gamePaused) {
+            state.animationFrameId = requestAnimationFrame(gameLoop);
+        }
+    }
+
+    // =============================================
+    // 15. INIZIALIZZAZIONE
     // =============================================
     function init() {
+        setupCanvas();
+        setupMobile();
+        setupEventListeners();
+        setupVideo();
+        setupPrizeMessage();
+        initResources();
+        initGamePositions();
+        state.animationFrameId = requestAnimationFrame(gameLoop);     
+    }
+
+    function initGamePositions() {
+        // Prima ridimensiona il canvas
+        resizeCanvas();
+        
+        // Calcola le posizioni basate sulle nuove dimensioni
+        const canvasCenterX = elements.canvas.width / 2;
+        
+        // Imposta dinosauro
+        gameObjects.dino.x = scaleValue(100);
+        gameObjects.dino.finalTargetX = canvasCenterX - scaleValue(150);
+        
+        // Ricalcola groundLevel dopo il resize
+        const dinoHeight = scaleValue(isMobileDevice() ? 180 : 150, false, { isDino: true });
+        const groundOffset = isMobileDevice() ? scaleValue(20, false) : 0;
+        gameObjects.dino.groundLevel = elements.canvas.height - dinoHeight - groundOffset;
+        gameObjects.dino.y = gameObjects.dino.groundLevel;
+        
+        // Imposta Dina
+        gameObjects.dina.startX = elements.canvas.width + scaleValue(100);
+        gameObjects.dina.entryTargetX = elements.canvas.width - scaleValue(250);
+        gameObjects.dina.finalTargetX = canvasCenterX + scaleValue(50);
+        alignDinaWithDino();
+        gameObjects.dina.y = isMobileDevice() ? -70 * 0.8 : -70;
+        console.log('Initial Dina position:', gameObjects.dina.y);
+    }
+
+    function setupCanvas() {
         elements.ctx = elements.canvas.getContext('2d');
         if (!elements.ctx) {
             alert("Errore: Impossibile inizializzare il contesto del canvas");
             return;
         }
+
+        // Configurazione anti-aliasing
+        elements.canvas.style.imageRendering = 'pixelated';
+        elements.canvas.style.imageRendering = 'crisp-edges';
+        elements.ctx.imageSmoothingEnabled = false;
+        
+        const dpr = window.devicePixelRatio || 1;
+        elements.canvas.width = Math.floor(elements.canvas.clientWidth * dpr);
+        elements.canvas.height = Math.floor(elements.canvas.clientHeight * dpr);
+        elements.ctx.scale(dpr, dpr);
+    }
+
+    function setupMobile() {
         if (isMobileDevice()) {
             elements.jumpButton.style.display = 'block';
-        }
-        if (isMobileDevice()) {
             document.head.insertAdjacentHTML('beforeend', `
                 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
             `);
-            // Forza ridimensionamento iniziale
+            
             setTimeout(() => {
                 resizeCanvas();
                 window.scrollTo(0, 0);
             }, 100);
-        }
-        if(isMobileDevice()) {
-            // Forza ridisegno completo al cambio orientamento
+            
             window.addEventListener('resize', () => {
                 setTimeout(() => {
                     resizeCanvas();
@@ -1584,17 +1566,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 }, 100);
             });
         }
-        // Inizializza canvas e risorse
-        resizeCanvas();
-        initResources();
-        setupPrizeMessage();
-        
-        // Configura event listeners
+    }
+
+    function setupEventListeners() {
         window.addEventListener("resize", resizeCanvas);
         document.addEventListener("keydown", handleJump);
         elements.jumpButton.addEventListener("click", handleJump);
         elements.jumpButton.addEventListener("touchstart", handleJump, { passive: true });
-
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'a' || e.key === 'A') {
@@ -1610,19 +1588,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 state.aKeyPressed = false;
             }
         });
+    }
 
-        // Avvia il primo frame
-        if (state.gamePaused) {
-            state.animationFrameId = requestAnimationFrame(gameLoop);
-        }
-
-        gameObjects.dino.finalTargetX = elements.canvas.width/2 - scaleValue(150);
-        gameObjects.dina.finalTargetX = elements.canvas.width/2 + scaleValue(50);
-        gameObjects.dino.x = gameObjects.dino.startX;
-        gameObjects.dina.x = gameObjects.dina.startX;
-        gameObjects.dina.visible = false;
+    function setupVideo() {
         elements.coverVideo.addEventListener('loadedmetadata', function() {
-            // Imposta le dimensioni corrette per mobile
             if (isMobileDevice()) {
                 const videoRatio = this.videoWidth / this.videoHeight;
                 const mobileWidth = Math.min(window.innerWidth * 0.95, elements.canvas.width);
@@ -1632,30 +1601,58 @@ document.addEventListener("DOMContentLoaded", () => {
                 this.style.height = `${mobileHeight}px`;
             }
         });
-        // Aggiungi queste proprietà ANTIALIASING
-        //elements.canvas.style.imageRendering = '-webkit-optimize-contrast';
-        elements.canvas.style.imageRendering = 'pixelated';
-        elements.canvas.style.imageRendering = 'crisp-edges';
-        elements.ctx.imageSmoothingEnabled = false;
-        // Forza dimensioni intere per canvas
-        const dpr = window.devicePixelRatio || 1;
-        elements.canvas.width = Math.floor(elements.canvas.clientWidth * dpr);
-        elements.canvas.height = Math.floor(elements.canvas.clientHeight * dpr);
-        elements.ctx.scale(dpr, dpr);        
-        // Forza il ridimensionamento iniziale su mobile
+
         if (isMobileDevice()) {
             setTimeout(() => {
                 elements.coverVideo.dispatchEvent(new Event('loadedmetadata'));
             }, 500);
         }
-        setupVideoForMobile();
-        // Listener per cambiamenti orientamento
-        window.addEventListener('resize', () => {
-            setTimeout(resizeCanvas, 100);
-        });
-    
-        // Forza ridimensionamento iniziale
+    }
+
+    function startGame() {
+        console.log("Avvio gioco");
+        state.gamePaused = false;
+        state.startTime = performance.now();
+        state.maskStartTime = null;
+        state.maskPauseTime = null;
+        state.maskProgress = 0;
+        state.maskComplete = false;
+        
+        // Ripristina il volume audio
+        resumeAllAudio();
+        
+        // Forza il ridimensionamento
         resizeCanvas();
+        
+        // Avvia il game loop
+        cancelAnimationFrame(state.animationFrameId);
+        state.animationFrameId = requestAnimationFrame(gameLoop);
+    }
+
+    function resumeAllAudio() {
+        // Riprendi l'audio context se sospeso
+        if (elements.audioContext && elements.audioContext.state === 'suspended') {
+            elements.audioContext.resume().then(() => {
+                console.log("AudioContext riattivato");
+            });
+        }
+        
+        // Ripristina i volumi
+        if (elements.audioSources.mare) {
+            elements.audioSources.mare.gainNode.gain.value = 0.7;
+        }
+        if (elements.audioSources.gtrs) {
+            elements.audioSources.gtrs.gainNode.gain.value = 0;
+        }
+        if (elements.audioSources.keys) {
+            elements.audioSources.keys.gainNode.gain.value = 0;
+        }
+        if (elements.audioSources.bass) {
+            elements.audioSources.bass.gainNode.gain.value = 0;
+        }
+        if (elements.audioSources.drum) {
+            elements.audioSources.drum.gainNode.gain.value = 0;
+        }
     }
 
     // Avvia il gioco
