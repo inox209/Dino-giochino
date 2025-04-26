@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         
         // Gameplay
-        INITIAL_SCROLL_SPEED: 2,
+        get INITIAL_SCROLL_SPEED() { return isMobileDevice() ? 1.5 : 2; },
         MAX_PAIR_PROBABILITY: 0.5,
         INITIAL_OBSTACLE_INTERVAL: 2000,
         MIN_OBSTACLE_INTERVAL: 2000,
@@ -225,8 +225,8 @@ document.addEventListener("DOMContentLoaded", () => {
                                (elements.canvas.height - dinoHeight - (isMobileDevice() ? scaleValue(20, false) : 0));
     
         // 2. Dimensioni di Dina (valori originali che funzionavano)
-        const dinaHeight = scaleValue(isMobileDevice() ? 160 : 320, false, { isDina: true });
-        const dinaWidth = scaleValue(isMobileDevice() ? 160 : 320, true, { isDina: true });
+        const dinaHeight = scaleValue(isMobileDevice() ? 120 : 320, false, { isDina: true });
+        const dinaWidth = scaleValue(isMobileDevice() ? 120 : 320, true, { isDina: true });
     
         // 3. Calcolo posizione Y - Versione corretta che funzionava
         const dinaY = dinoGroundLevel + dinoHeight - dinaHeight - scaleValue(10, false);
@@ -607,12 +607,14 @@ document.addEventListener("DOMContentLoaded", () => {
             event.type === "touchstart") {
             event.preventDefault();
             
-            // Attiva l'audio context al primo click se necessario
-            if (!elements.audioContext) {
-                initAudioContext();
-            } else if (elements.audioContext.state === 'suspended') {
-                elements.audioContext.resume();
-            }
+            if (state.jumpCooldown && performance.now() - state.jumpCooldown < 500) return;
+            state.jumpCooldown = performance.now();
+            initAudioContext();
+            //if (!elements.audioContext) {
+            //    initAudioContext();
+            //} else if (elements.audioContext.state === 'suspended') {
+            //    elements.audioContext.resume();
+            //}
             
             if (state.gamePaused) {
                 if (state.popupState === 0) {
@@ -957,7 +959,9 @@ document.addEventListener("DOMContentLoaded", () => {
             elements.ctx.fillText(line.trim(), x, y);
         
             // Istruzioni per continuare
-            const continueY = elements.canvas.height * 0.75; // Fisso a 3/4 dello schermo
+            const continueY = isMobileDevice() 
+            ? elements.canvas.height * 0.85  // Sposta più in basso su mobile
+            : elements.canvas.height * 0.75;
             const continueText = isMobileDevice() ? "TOCCA PER CONTINUARE" : "PREMI SPAZIO PER CONTINUARE";
             
             elements.ctx.fillText(continueText, x, continueY);
@@ -1031,7 +1035,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Solo se il gioco non è finito, aumenta la velocità
         if (!state.gameEnded) {
-            state.scrollSpeed += 0.001;
+            state.scrollSpeed += isMobileDevice() ? 0.0005 : 0.001;
         }
 
         // Scorciatoia debug
@@ -1371,7 +1375,7 @@ document.addEventListener("DOMContentLoaded", () => {
         
         // Configurazione del pulsante
         elements.prizeMessage.button.textContent = "E ora?";
-        elements.prizeMessage.button.href = "https://distrokid.com/hyperfollow/inox209/una-nuova-scusa";
+        elements.prizeMessage.button.href = "https://distrokid.com/hyperfollow/inox209/offline";
         elements.prizeMessage.button.target = "_blank";
         
         // Nascondi inizialmente il container
