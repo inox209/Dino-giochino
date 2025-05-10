@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         
         // Gameplay
-        get INITIAL_SCROLL_SPEED() { return isMobileDevice() ? 1 : 2; },
+        get INITIAL_SCROLL_SPEED() { return isMobileDevice() ? 1.5 : 2; },
         MAX_PAIR_PROBABILITY: 0.5,
         INITIAL_OBSTACLE_INTERVAL: 2000,
         MIN_OBSTACLE_INTERVAL: 2000,
@@ -293,7 +293,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function scaleValue(value, isWidth = true, options = {}) {
         const { isDino = false, isObstacle = false } = options;
-        const { isDina = false } = options;
         const scaleFactor = isWidth ? elements.canvas.width / CONFIG.REFERENCE_WIDTH : 
                                     elements.canvas.height / CONFIG.REFERENCE_HEIGHT;
 
@@ -907,12 +906,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function draw() {
+        if (!elements.ctx) {
+            elements.ctx = elements.canvas.getContext('2d');
+            if (!elements.ctx) return;
+        }
+
+        if (state.maskStartTime && !state.maskComplete) {
+            const elapsed = performance.now() - state.maskStartTime;
+            state.maskProgress = Math.min(elapsed / CONFIG.MASK_DURATION, 1);
+            drawHeartMask(elements.ctx, state.maskProgress);
+            
+            if (state.maskProgress >= 1) {
+                state.maskComplete = true;
+            }
+        }
+        
         elements.ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
         drawGameElements();
-//        if (!elements.ctx) {
-//            elements.ctx = elements.canvas.getContext('2d');
-//            if (!elements.ctx) return;
-//        }
 
         // Messaggi iniziali
         if(state.gamePaused && state.popupState < messages.length) {
@@ -950,21 +960,11 @@ document.addEventListener("DOMContentLoaded", () => {
         
             // Istruzioni per continuare
             const continueY = isMobileDevice() 
-            ? elements.canvas.height * 0.75  // Sposta più in basso su mobile
+            ? elements.canvas.height * 0.85  // Sposta più in basso su mobile
             : elements.canvas.height * 0.75;
             const continueText = isMobileDevice() ? "TOCCA PER CONTINUARE" : "PREMI SPAZIO PER CONTINUARE";
             
             elements.ctx.fillText(continueText, x, continueY);
-        }
-
-        if (state.maskStartTime && !state.maskComplete) {
-            const elapsed = performance.now() - state.maskStartTime;
-            state.maskProgress = Math.min(elapsed / CONFIG.MASK_DURATION, 1);
-            drawHeartMask(elements.ctx, state.maskProgress);
-            
-            if (state.maskProgress >= 1) {
-                state.maskComplete = true;
-            }
         }
 
         // Maschera a cuore
@@ -1035,7 +1035,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Solo se il gioco non è finito, aumenta la velocità
         if (!state.gameEnded) {
-            state.scrollSpeed += isMobileDevice() ? 0.0001 : 0.001;
+            state.scrollSpeed += isMobileDevice() ? 0.0005 : 0.001;
         }
 
         // Scorciatoia debug
