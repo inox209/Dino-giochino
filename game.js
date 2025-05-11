@@ -463,9 +463,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 })
             );
 
-            audioFiles.forEach(({ key }, index) => {
-                elements.audioBuffers[key] = buffers[index];
-            });
+        //    audioFiles.forEach(({ key }, index) => {
+        //        elements.audioBuffers[key] = buffers[index];
+        //    });
 
             state.audioBuffersLoaded = true;
         } catch (error) {
